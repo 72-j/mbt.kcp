@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "thy1016/bitbang/moonkcp"
+package "thy1016/moonkcp"
 
 // Values
 pub const ASK_SEND : Int = 1
@@ -44,9 +44,9 @@ pub const WND_RCV : Int = 128
 
 pub const WND_SND : Int = 32
 
-pub fn decode_segment(Bytes, Int) -> (KcpSegment, Int)?
+pub fn decode_segment(FixedArray[Byte], Int) -> (KcpSegment, Int)?
 
-pub fn encode_segment(KcpSegment) -> Bytes
+pub fn encode_segment(KcpSegment) -> FixedArray[Byte]
 
 // Errors
 
@@ -92,16 +92,16 @@ pub(all) struct Kcp {
 }
 pub fn Kcp::check(Self, Int) -> Int
 pub fn Kcp::create(Int) -> Self
-pub fn Kcp::flush_frames(Self) -> Array[Bytes]
-pub fn Kcp::input(Self, Bytes) -> Int
+pub fn Kcp::flush_frames(Self) -> Array[FixedArray[Byte]]
+pub fn Kcp::input(Self, FixedArray[Byte]) -> Int
 pub fn Kcp::peeksize(Self) -> Int
-pub fn Kcp::recv(Self) -> Bytes?
-pub fn Kcp::send(Self, Bytes) -> Int
+pub fn Kcp::recv(Self) -> FixedArray[Byte]?
+pub fn Kcp::send(Self, FixedArray[Byte]) -> Int
 pub fn Kcp::set_mtu(Self, Int) -> Int
 pub fn Kcp::set_nodelay(Self, Int, Int, Int, Int) -> Unit
 pub fn Kcp::set_wnd(Self, Int, Int) -> Unit
 pub fn Kcp::stats(Self) -> KcpStats
-pub fn Kcp::update(Self, Int) -> Array[Bytes]
+pub fn Kcp::update(Self, Int) -> Array[FixedArray[Byte]]
 pub fn Kcp::waitsnd(Self) -> Int
 
 pub(all) struct KcpSegment {
@@ -113,7 +113,7 @@ pub(all) struct KcpSegment {
   mut sn : Int
   mut una : Int
   mut len : Int
-  mut data : Bytes
+  mut data : FixedArray[Byte]
   mut xmit : Int
   mut fastack : Int
   mut resendts : Int
@@ -128,26 +128,26 @@ pub(all) struct KcpServer {
 pub fn KcpServer::convs(Self) -> Array[Int]
 pub fn KcpServer::get_or_create(Self, Int) -> KcpSession?
 pub fn KcpServer::new(Int, Int) -> Self
-pub fn KcpServer::on_datagram(Self, Bytes) -> Int
+pub fn KcpServer::on_datagram(Self, FixedArray[Byte]) -> Int
 pub fn KcpServer::remove(Self, Int) -> Unit
 pub fn KcpServer::session_of(Self, Int) -> KcpSession?
 pub fn KcpServer::size(Self) -> Int
 pub fn KcpServer::sweep(Self, Int, Int) -> Array[Int]
-pub fn KcpServer::tick(Self, Int) -> Array[(Int, Bytes)]
+pub fn KcpServer::tick(Self, Int) -> Array[(Int, FixedArray[Byte])]
 
 pub(all) struct KcpSession {
   kcp : Kcp
-  inbound : Array[Bytes]
+  inbound : Array[FixedArray[Byte]]
   high_water : Int
 }
 pub fn KcpSession::is_dead(Self) -> Bool
 pub fn KcpSession::last_active(Self) -> Int
 pub fn KcpSession::new(Int, Int) -> Self
-pub fn KcpSession::on_datagram(Self, Bytes) -> Int
-pub fn KcpSession::poll_message(Self) -> Bytes?
-pub fn KcpSession::send_message(Self, Bytes) -> Int
+pub fn KcpSession::on_datagram(Self, FixedArray[Byte]) -> Int
+pub fn KcpSession::poll_message(Self) -> FixedArray[Byte]?
+pub fn KcpSession::send_message(Self, FixedArray[Byte]) -> Int
 pub fn KcpSession::stats(Self) -> KcpStats
-pub fn KcpSession::tick(Self, Int) -> Array[Bytes]
+pub fn KcpSession::tick(Self, Int) -> Array[FixedArray[Byte]]
 
 pub(all) struct KcpStats {
   srtt : Int

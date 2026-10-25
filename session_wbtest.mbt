@@ -44,7 +44,7 @@ test "session roundtrip fragmented message" {
   let payload = mk_payload(9, 250)
   assert_eq(a.send_message(payload), 250)
   pump_sessions(a, b, 0, 20)
-  assert_eq(b.poll_message(), Some(payload))
+  assert_msg(b.poll_message(), payload)
   assert_eq(b.poll_message(), None)
 }
 
@@ -63,7 +63,7 @@ test "backpressure rejects when pipe full" {
   assert_eq(a.kcp.waitsnd(), 0)
   assert_eq(a.send_message(mk_payload(4, 10)), 10)
   pump_sessions(a, b, 300, 20)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   let mut go = true
   while go {
     match b.poll_message() {
@@ -87,7 +87,7 @@ test "poll_message fifo order" {
   pump_sessions(a, b, 0, 30)
   let mut tag = 1
   while tag <= 8 {
-    assert_eq(b.poll_message(), Some(mk_payload(tag, 6)))
+    assert_msg(b.poll_message(), mk_payload(tag, 6))
     tag += 1
   }
   assert_eq(b.poll_message(), None)
@@ -131,7 +131,7 @@ test "session lossy convergence" {
   }
   let mut tag = 1
   while tag <= 20 {
-    assert_eq(b.poll_message(), Some(mk_payload(tag, 24)))
+    assert_msg(b.poll_message(), mk_payload(tag, 24))
     tag += 1
   }
   assert_eq(b.poll_message(), None)

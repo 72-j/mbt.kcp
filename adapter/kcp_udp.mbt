@@ -3,13 +3,17 @@
 // 协议核心零 IO 律不破:本包是唯一触碰 socket 的地方。
 // 形状:B 侧 = UdpServer(:0 自分配,首包 recvfrom 学对端地址);
 //       A 侧 = UdpClient(connected,构造即指向 B)。
-// 会话帧即 Bytes(刀1)——出帧直发、收报单趟切片;时序仍由宿主注入
+// 会话帧即 FixedArray[Byte](刀2a)——出帧 from_array 一道转、收报 exact-size 批拷切片;时序仍由宿主注入
 // (pump_out(current),核心 ms 律不变)。
 
 ///|
-/// UDP 载荷切片 → wire Bytes(只取前 n 字节,recv 返回实际读长)。
-fn bytes_of(buf : FixedArray[Byte], n : Int) -> Bytes {
-  Bytes::makei(n, fn(i) { buf[i] })
+/// UDP 载荷切片 → exact-size wire FixedArray(unsafe_blit 一道批拷)。
+fn bytes_of(buf : FixedArray[Byte], n : Int) -> FixedArray[Byte] {
+  let wire : FixedArray[Byte] = FixedArray::make(n, 0b0)
+  if n > 0 {
+    FixedArray::unsafe_blit(wire, 0, buf, 0, n)
+  }
+  wire
 }
 
 ///|
@@ -69,12 +73,12 @@ pub async fn KcpUdpPeer::pump_out(self : KcpUdpPeer, current : Int) -> Int raise
   let mut sent = 0
   for frame in frames {
     match self.client {
-      Some(client) => client.send(frame)
+      Some(client) => client.send(Bytes::from_array(frame))
       None =>
         match self.server {
           Some(server) =>
             match self.peer_addr {
-              Some(peer) => server.sendto(frame, peer)
+              Some(peer) => server.sendto(Bytes::from_array(frame), peer)
               // 对端地址未学得(B 首包未到)——帧弃,发送侧重传机制自会补
               None => ()
             }
@@ -115,13 +119,13 @@ pub async fn KcpUdpPeer::recv_one(self : KcpUdpPeer) -> Int raise {
 
 ///|
 /// 应用下发一消息(背压语义同会话壳)。
-pub fn KcpUdpPeer::send_message(self : KcpUdpPeer, payload : Bytes) -> Int {
+pub fn KcpUdpPeer::send_message(self : KcpUdpPeer, payload : FixedArray[Byte]) -> Int {
   self.session.send_message(payload)
 }
 
 ///|
 /// 应用收一消息(FIFO;无消息 None)。
-pub fn KcpUdpPeer::poll_message(self : KcpUdpPeer) -> Bytes? {
+pub fn KcpUdpPeer::poll_message(self : KcpUdpPeer) -> FixedArray[Byte]? {
   self.session.poll_message()
 }
 
@@ -176,7 +180,7 @@ pub async fn KcpUdpHub::pump_out(
   for entry in tagged {
     let (conv, frame) = entry
     match self.addrs.get(conv) {
-      Some(addr) => self.udp.sendto(frame, addr)
+      Some(addr) => self.udp.sendto(Bytes::from_array(frame), addr)
       // conv 无地址(不可能经报文入表缺失)——帧弃,重传自会补
       None => ()
     }
@@ -200,7 +204,7 @@ pub async fn KcpUdpHub::pump_out(
 ///|
 /// 对指定会话发消息(背压语义同会话壳;无会话 -1)。
 pub fn KcpUdpHub::send_message_to(
-  self : KcpUdpHub, conv : Int, payload : Bytes
+  self : KcpUdpHub, conv : Int, payload : FixedArray[Byte]
 ) -> Int {
   match self.server.session_of(conv) {
     Some(session) => session.send_message(payload)
@@ -210,7 +214,7 @@ pub fn KcpUdpHub::send_message_to(
 
 ///|
 /// 收指定会话一消息(FIFO;无会话/无消息 None)。
-pub fn KcpUdpHub::poll_message(self : KcpUdpHub, conv : Int) -> Bytes? {
+pub fn KcpUdpHub::poll_message(self : KcpUdpHub, conv : Int) -> FixedArray[Byte]? {
   match self.server.session_of(conv) {
     Some(session) => session.poll_message()
     None => None

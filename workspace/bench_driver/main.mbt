@@ -25,7 +25,7 @@ fn main {
   b.set_nodelay(1, 10, 2, 1)
   a.set_wnd(window_segs, window_segs)
   b.set_wnd(window_segs, window_segs)
-  let chunk = Bytes::make(chunk_len, 65)
+  let chunk : FixedArray[Byte] = FixedArray::make(chunk_len, 65)
   let start : Int64 = @async.now()
   let mut sent_bytes : Int64 = 0L
   let mut segments : Int64 = 0L

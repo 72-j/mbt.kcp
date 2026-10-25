@@ -19,8 +19,8 @@ fn mk_fast(conv : Int32) -> Kcp {
 
 ///|
 /// 造载荷:data[0] = tag,其余 (tag + i) % 128 递推——序判定用。
-fn mk_payload(tag : Int32, len : Int32) -> Bytes {
-  Bytes::makei(len, fn(i) { ((tag + i) % 128).to_byte() })
+fn mk_payload(tag : Int32, len : Int32) -> FixedArray[Byte] {
+  FixedArray::makei(len, fn(i) { ((tag + i) % 128).to_byte() })
 }
 
 ///|
@@ -63,7 +63,11 @@ fn pump_lossy(a : Kcp, b : Kcp, ticks : Int32) -> Unit {
 }
 
 ///|
-fn deliver_lossy(frames : Array[Bytes], to : Kcp, secret : Int32) -> Unit {
+fn deliver_lossy(
+  frames : Array[FixedArray[Byte]],
+  to : Kcp,
+  secret : Int32,
+) -> Unit {
   let mut i = 0
   while i < frames.length() {
     let frame = frames[i]
@@ -81,7 +85,7 @@ fn deliver_lossy(frames : Array[Bytes], to : Kcp, secret : Int32) -> Unit {
 
 ///|
 /// 排空收端全部整消息。
-fn drain(kcp : Kcp, out : Array[Bytes]) -> Unit {
+fn drain(kcp : Kcp, out : Array[FixedArray[Byte]]) -> Unit {
   let mut go = true
   while go {
     match kcp.recv() {
@@ -98,7 +102,7 @@ test "clean roundtrip single message" {
   let payload = mk_payload(42, 30)
   assert_eq(sender.send(payload), 30)
   pump_clean(sender, receiver, 0, 10)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   assert_eq(inbox.length(), 1)
   assert_eq(inbox[0], payload)
@@ -113,7 +117,7 @@ test "fragmented message merges in order" {
   let payload = mk_payload(5, 200)
   assert_eq(sender.send(payload), 200)
   pump_clean(sender, receiver, 0, 20)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   assert_eq(inbox.length(), 1)
   assert_eq(inbox[0], payload)
@@ -129,12 +133,12 @@ test "twenty messages in order clean" {
     tag += 1
   }
   pump_clean(sender, receiver, 0, 30)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   assert_eq(inbox.length(), 20)
   let mut tag = 1
   while tag <= 20 {
-    assert_eq(inbox[tag - 1], mk_payload(tag, 20))
+    assert_fa_eq(inbox[tag - 1], mk_payload(tag, 20))
     tag += 1
   }
 }
@@ -150,12 +154,12 @@ test "lossy convergence: reorder drop dup all delivered in order" {
     tag += 1
   }
   pump_lossy(sender, receiver, 400)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   assert_eq(inbox.length(), 40)
   let mut tag = 1
   while tag <= 40 {
-    assert_eq(inbox[tag - 1], mk_payload(tag, 24))
+    assert_fa_eq(inbox[tag - 1], mk_payload(tag, 24))
     tag += 1
   }
 }
@@ -173,7 +177,7 @@ test "rto retransmit recovers lost data" {
   }
   let mut t = 0
   let mut tick = 0
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   while tick < 200 {
     let fa = sender.update(t)
     let mut i = 0
@@ -197,7 +201,7 @@ test "rto retransmit recovers lost data" {
   assert_eq(inbox.length(), 5)
   let mut tag = 1
   while tag <= 5 {
-    assert_eq(inbox[tag - 1], mk_payload(tag, 16))
+    assert_fa_eq(inbox[tag - 1], mk_payload(tag, 16))
     tag += 1
   }
 }
@@ -242,14 +246,14 @@ test "window probe resumes after receiver stall" {
   assert_true(saw_wask)
   assert_eq(receiver.rcv_queue.length(), 128)
   // 排空后继续泵,探窗应恢复投递(停摆期 RTO 退避 ~1s+,泵程跨过重传点)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   pump_clean(sender, receiver, t + 100, 800)
   drain(receiver, inbox)
   assert_eq(inbox.length(), 140)
   let mut tag = 1
   while tag <= 140 {
-    assert_eq(inbox[tag - 1], mk_payload(tag, 10))
+    assert_fa_eq(inbox[tag - 1], mk_payload(tag, 10))
     tag += 1
   }
 }
@@ -302,7 +306,7 @@ test "duplicate push deduplicated" {
   assert_eq(receiver.input(encoded), 0)
   assert_eq(receiver.rcv_buf.length(), 0)
   assert_eq(receiver.rcv_queue.length(), 1)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   assert_eq(inbox.length(), 1)
   assert_eq(inbox[0], payload)
@@ -328,7 +332,7 @@ test "empty message roundtrip" {
   let receiver = mk_fast(25)
   assert_eq(sender.send([]), 0)
   pump_clean(sender, receiver, 0, 10)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   assert_eq(inbox.length(), 1)
   assert_eq(inbox[0].length(), 0)
@@ -338,9 +342,9 @@ test "empty message roundtrip" {
 /// input 错码:-1 短报文 / conv 不符,-3 非法 cmd。
 test "input rejects malformed datagrams" {
   let receiver = mk_fast(27)
-  let short = Bytes::make(10, 0b0)
+  let short : FixedArray[Byte] = FixedArray::make(10, 0b0)
   assert_eq(receiver.input(short), -1)
-  let empty = Bytes::make(0, 0b0)
+  let empty : FixedArray[Byte] = FixedArray::make(0, 0b0)
   let wrong_conv = encode_segment(
     KcpSegment::make(999, CMD_PUSH, 0, 32, 0, 0, 0, empty),
   )
@@ -439,7 +443,7 @@ test "conservation laws hold mid-flight and at quiescence" {
   )
   assert_snd_bounds(sender)
   // 端到端字节守恒:发 = 收(无损路径)
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain(receiver, inbox)
   let mut total = 0
   for msg in inbox {
@@ -488,7 +492,7 @@ test "input rejects truncated payload with -2" {
     KcpSegment::make(63, CMD_PUSH, 0, 32, 0, 0, 0, mk_payload(1, 10)),
   )
   // 截到 24 + 5:头声明 len=10,余量仅 5
-  let truncated = Bytes::makei(HEADER_SIZE + 5, fn(i) { full[i] })
+  let truncated = FixedArray::makei(HEADER_SIZE + 5, fn(i) { full[i] })
   assert_eq(receiver.input(truncated), -2)
 }
 
@@ -503,4 +507,27 @@ test "check schedules next update and resyncs on jump" {
   assert_eq(kcp.check(15), 15)
   // 跳钟 |slap|>=10000:ts_flush 重锚,返回 current
   assert_eq(kcp.check(20000), 20000)
+}
+
+///|
+/// FixedArray[Byte] 载荷等值断言(逐元素;FixedArray 无结构 Eq)。
+fn assert_fa_eq(a : FixedArray[Byte], b : FixedArray[Byte]) -> Unit raise {
+  assert_eq(a.length(), b.length())
+  let mut i = 0
+  while i < a.length() {
+    assert_eq(a[i], b[i])
+    i += 1
+  }
+}
+
+///|
+/// 消息 Option 断言:Some 且逐元素等。
+fn assert_msg(
+  opt : FixedArray[Byte]?,
+  payload : FixedArray[Byte],
+) -> Unit raise {
+  match opt {
+    Some(msg) => assert_fa_eq(msg, payload)
+    None => abort("expected message, got None")
+  }
 }

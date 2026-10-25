@@ -33,7 +33,7 @@ try {
   const cOut = execFileSync(cbin, { encoding: "utf8", maxBuffer: 1024 * 1024 });
   const mOut = execFileSync(
     "moon",
-    ["run", "workspace/bench_driver", "--target", "native"],
+    ["run", "workspace/bench_driver", "--target", "native", "--release"],
     { cwd: root, encoding: "utf8", maxBuffer: 1024 * 1024 },
   );
   const cLine = cOut.split("\n").find((l) => l.startsWith("KCPBENCH:C")) ?? "";

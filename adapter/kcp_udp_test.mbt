@@ -2,8 +2,28 @@
 // 协议时序仍注入快钟——确定性不破)
 
 ///|
-fn mk_payload(tag : Int, len : Int) -> Bytes {
-  Bytes::makei(len, fn(i) { ((tag + i) % 128).to_byte() })
+fn mk_payload(tag : Int, len : Int) -> FixedArray[Byte] {
+  FixedArray::makei(len, fn(i) { ((tag + i) % 128).to_byte() })
+}
+
+///|
+/// FixedArray[Byte] 载荷等值断言(逐元素;FixedArray 无结构 Eq)。
+fn assert_fa_eq(a : FixedArray[Byte], b : FixedArray[Byte]) -> Unit raise {
+  assert_eq(a.length(), b.length())
+  let mut i = 0
+  while i < a.length() {
+    assert_eq(a[i], b[i])
+    i += 1
+  }
+}
+
+///|
+/// 消息 Option 断言:Some 且逐元素等。
+fn assert_msg(opt : FixedArray[Byte]?, payload : FixedArray[Byte]) -> Unit raise {
+  match opt {
+    Some(msg) => assert_fa_eq(msg, payload)
+    None => abort("expected message, got None")
+  }
 }
 
 ///|
@@ -49,7 +69,7 @@ async test "K4: loopback A to B twenty messages in order" {
   drive(a, b, 0, 300)
   let mut tag = 1
   while tag <= 20 {
-    assert_eq(b.poll_message(), Some(mk_payload(tag, 24)))
+    assert_msg(b.poll_message(), mk_payload(tag, 24))
     tag += 1
   }
   assert_eq(b.poll_message(), None)
@@ -65,7 +85,7 @@ async test "K4: fragmented message over real datagrams" {
   let payload = mk_payload(9, 250)
   assert_eq(a.send_message(payload), 250)
   drive(a, b, 0, 200)
-  assert_eq(b.poll_message(), Some(payload))
+  assert_msg(b.poll_message(), payload)
   assert_eq(b.poll_message(), None)
 }
 
@@ -78,7 +98,7 @@ async test "K4: return path B to A via server sendto" {
   // 先走一轮 A→B:B 学得 A 地址
   assert_eq(a.send_message(mk_payload(1, 8)), 8)
   drive(a, b, 0, 60)
-  assert_eq(b.poll_message(), Some(mk_payload(1, 8)))
+  assert_msg(b.poll_message(), mk_payload(1, 8))
   // 回程:B(server sendto)→ A
   let mut tag = 2
   while tag <= 6 {
@@ -88,7 +108,7 @@ async test "K4: return path B to A via server sendto" {
   drive(a, b, 600, 300)
   let mut tag = 2
   while tag <= 6 {
-    assert_eq(a.poll_message(), Some(mk_payload(tag, 12)))
+    assert_msg(a.poll_message(), mk_payload(tag, 12))
     tag += 1
   }
   assert_eq(a.poll_message(), None)

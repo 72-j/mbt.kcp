@@ -62,8 +62,8 @@ async test "K7: hub serves two clients over real UDP without cross-talk" {
   assert_eq(hub.convs().length(), 2)
   let mut tag = 1
   while tag <= 5 {
-    assert_eq(hub.poll_message(101), Some(mk_payload(tag, 20)))
-    assert_eq(hub.poll_message(202), Some(mk_payload(tag + 10, 24)))
+    assert_msg(hub.poll_message(101), mk_payload(tag, 20))
+    assert_msg(hub.poll_message(202), mk_payload(tag + 10, 24))
     tag += 1
   }
   assert_eq(hub.poll_message(101), None)
@@ -76,7 +76,7 @@ async test "K7: hub serves two clients over real UDP without cross-talk" {
   let _ = drive_hub(hub, [ca, cb], 600, 60)
   let mut tag = 1
   while tag <= 3 {
-    assert_eq(ca.poll_message(), Some(mk_payload(tag + 50, 14)))
+    assert_msg(ca.poll_message(), mk_payload(tag + 50, 14))
     tag += 1
   }
   assert_eq(ca.poll_message(), None)

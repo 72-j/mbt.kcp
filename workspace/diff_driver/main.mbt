@@ -46,8 +46,8 @@ fn LossBox::drop(self : LossBox) -> Bool {
 
 ///|
 /// 确定性载荷:(tag * 37 + j) & 0x7F——C 侧同式。
-fn payload_of(msg_tag : Int, length : Int) -> Bytes {
-  Bytes::makei(length, fn(j) { ((msg_tag * 37 + j) & 0x7F).to_byte() })
+fn payload_of(msg_tag : Int, length : Int) -> FixedArray[Byte] {
+  FixedArray::makei(length, fn(j) { ((msg_tag * 37 + j) & 0x7F).to_byte() })
 }
 
 ///|
@@ -57,7 +57,7 @@ fn byte_hex(sb : StringBuilder, b : Int) -> Unit {
 }
 
 ///|
-fn print_frames(round : Int, side : String, frames : Array[Bytes]) -> Unit {
+fn print_frames(round : Int, side : String, frames : Array[FixedArray[Byte]]) -> Unit {
   for frame in frames {
     let sb = StringBuilder()
     sb.write("\{round} ")
@@ -75,7 +75,7 @@ fn print_frames(round : Int, side : String, frames : Array[Bytes]) -> Unit {
 ///|
 /// 带损投递一帧列(倒序判定已先抽):每帧一抽判丢。
 fn deliver_lossy(
-  loss : LossBox, frames : Array[Bytes], to : @moonkcp.Kcp, reversed : Bool
+  loss : LossBox, frames : Array[FixedArray[Byte]], to : @moonkcp.Kcp, reversed : Bool
 ) -> Unit {
   let n = frames.length()
   let mut i = 0

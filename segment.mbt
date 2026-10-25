@@ -20,8 +20,8 @@ pub const CMD_WINS : Int32 = 84
 pub const HEADER_SIZE : Int32 = 24
 
 ///|
-/// KCP 段:24B 线格式字段 + snd_buf 在途态。data 为 Bytes(不可变,
-/// 发送侧与载荷共享同一对象,零拷贝)。
+/// KCP 段:24B 线格式字段 + snd_buf 在途态。data 为 FixedArray[Byte]
+/// (纪律不可变,发送侧与载荷共享同一对象,零拷贝;批拷走 unsafe_blit)。
 pub(all) struct KcpSegment {
   mut conv : Int32
   mut cmd : Int32
@@ -31,7 +31,7 @@ pub(all) struct KcpSegment {
   mut sn : Int32
   mut una : Int32
   mut len : Int32
-  mut data : Bytes
+  mut data : FixedArray[Byte]
   mut xmit : Int32
   mut fastack : Int32
   mut resendts : Int32
@@ -48,7 +48,7 @@ fn KcpSegment::make(
   ts : Int32,
   sn : Int32,
   una : Int32,
-  data : Bytes,
+  data : FixedArray[Byte],
 ) -> KcpSegment {
   {
     conv,
@@ -93,20 +93,22 @@ fn segment_byte(seg : KcpSegment, data_len : Int32, i : Int32) -> Byte {
 
 ///|
 /// 编码 Segment 为线格式 Bytes(单趟 makei,头 + 载荷一体成形)。
-pub fn encode_segment(seg : KcpSegment) -> Bytes {
+pub fn encode_segment(seg : KcpSegment) -> FixedArray[Byte] {
   let data_len = seg.data.length()
-  Bytes::makei(HEADER_SIZE + data_len, fn(i) { segment_byte(seg, data_len, i) })
+  FixedArray::makei(HEADER_SIZE + data_len, fn(i) {
+    segment_byte(seg, data_len, i)
+  })
 }
 
 ///|
 /// 读取 little-endian u16。
-fn read_u16(buf : Bytes, offset : Int32) -> Int32 {
+fn read_u16(buf : FixedArray[Byte], offset : Int32) -> Int32 {
   buf[offset].to_int() | (buf[offset + 1].to_int() << 8)
 }
 
 ///|
 /// 读取 little-endian u32。
-fn read_u32(buf : Bytes, offset : Int32) -> Int32 {
+fn read_u32(buf : FixedArray[Byte], offset : Int32) -> Int32 {
   buf[offset].to_int() |
   (buf[offset + 1].to_int() << 8) |
   (buf[offset + 2].to_int() << 16) |
@@ -116,7 +118,10 @@ fn read_u32(buf : Bytes, offset : Int32) -> Int32 {
 ///|
 /// 从 Bytes 报文 offset 处解码一段。返回 (段, 消耗字节数);
 /// 头不完整或声明 len 越界返回 None。
-pub fn decode_segment(buf : Bytes, offset : Int32) -> (KcpSegment, Int32)? {
+pub fn decode_segment(
+  buf : FixedArray[Byte],
+  offset : Int32,
+) -> (KcpSegment, Int32)? {
   let remaining = buf.length() - offset
   if remaining < HEADER_SIZE {
     return None
@@ -132,7 +137,10 @@ pub fn decode_segment(buf : Bytes, offset : Int32) -> (KcpSegment, Int32)? {
   if offset + HEADER_SIZE + data_len > buf.length() {
     return None
   }
-  let data = Bytes::makei(data_len, fn(i) { buf[offset + HEADER_SIZE + i] })
+  let data : FixedArray[Byte] = FixedArray::make(data_len, 0b0)
+  if data_len > 0 {
+    FixedArray::unsafe_blit(data, 0, buf, offset + HEADER_SIZE, data_len)
+  }
   let seg = KcpSegment::make(conv, cmd, frg, wnd, ts, sn, una, data)
   Some((seg, HEADER_SIZE + data_len))
 }

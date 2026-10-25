@@ -46,7 +46,10 @@ pub fn KcpServer::get_or_create(self : KcpServer, conv : Int32) -> KcpSession? {
 ///|
 /// 收一报:头 4 字节 conv 路由。返回码:input 错码直传(0/-1/-2/-3);
 /// -4 = 会话表满弃包。
-pub fn KcpServer::on_datagram(self : KcpServer, datagram : Bytes) -> Int32 {
+pub fn KcpServer::on_datagram(
+  self : KcpServer,
+  datagram : FixedArray[Byte],
+) -> Int32 {
   if datagram.length() < HEADER_SIZE {
     return -1
   }
@@ -64,8 +67,8 @@ pub fn KcpServer::on_datagram(self : KcpServer, datagram : Bytes) -> Int32 {
 pub fn KcpServer::tick(
   self : KcpServer,
   current : Int32,
-) -> Array[(Int32, Bytes)] {
-  let out : Array[(Int32, Bytes)] = []
+) -> Array[(Int32, FixedArray[Byte])] {
+  let out : Array[(Int32, FixedArray[Byte])] = []
   for conv, session in self.sessions {
     for frame in session.tick(current) {
       out.push((conv, frame))

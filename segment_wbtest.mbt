@@ -7,7 +7,9 @@ fn mk_seg(
   sn : Int32,
   text_len : Int32,
 ) -> KcpSegment {
-  let data = Bytes::makei(text_len, fn(i) { (65 + i).to_byte() })
+  let data : FixedArray[Byte] = FixedArray::makei(text_len, fn(i) {
+    (65 + i).to_byte()
+  })
   {
     conv,
     cmd,
@@ -49,14 +51,14 @@ test "empty data" {
 
 ///|
 test "short buf None" {
-  let buf = Bytes::make(10, 0b0)
+  let buf : FixedArray[Byte] = FixedArray::make(10, 0b0)
   assert_true(decode_segment(buf, 0) is None)
 }
 
 ///|
 test "len overrun None" {
   // 28 字节零帧,len 字段(字节 20..23)= 10 > 剩余 ⇒ None
-  let buf = Bytes::makei(28, fn(i) {
+  let buf = FixedArray::makei(28, fn(i) {
     if i == 20 {
       (10).to_byte()
     } else {
@@ -73,7 +75,7 @@ test "sequential decode" {
   let e1 = encode_segment(s1)
   let e2 = encode_segment(s2)
   let len1 = e1.length()
-  let combined = Bytes::makei(len1 + e2.length(), fn(i) {
+  let combined = FixedArray::makei(len1 + e2.length(), fn(i) {
     if i < len1 {
       e1[i]
     } else {

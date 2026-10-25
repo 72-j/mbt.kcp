@@ -398,7 +398,7 @@ fn Kcp::move_rcv_buf_to_queue(self : Kcp) -> Unit {
 ///|
 /// 输入一报文(可含多段;ikcp_input 直译)。返回 0 / 负错码:
 /// -1 长度或 conv 不符;-2 声明 len 超出;-3 非法 cmd。
-pub fn Kcp::input(self : Kcp, datagram : Bytes) -> Int32 {
+pub fn Kcp::input(self : Kcp, datagram : FixedArray[Byte]) -> Int32 {
   let prev_una = self.snd_una
   let mut offset = 0
   let mut remaining = datagram.length()
@@ -451,8 +451,10 @@ pub fn Kcp::input(self : Kcp, datagram : Bytes) -> Int32 {
       if itimediff(sn, self.rcv_nxt + self.rcv_wnd) < 0 {
         self.ack_push(sn, ts)
         if itimediff(sn, self.rcv_nxt) >= 0 {
-          let base = offset
-          let data = Bytes::makei(len, fn(j) { datagram[base + j] })
+          let data : FixedArray[Byte] = FixedArray::make(len, 0b0)
+          if len > 0 {
+            FixedArray::unsafe_blit(data, 0, datagram, offset, len)
+          }
           let seg = KcpSegment::make(conv, cmd, frg, wnd, ts, sn, una, data)
           self.parse_data(seg)
         }
@@ -496,7 +498,7 @@ pub fn Kcp::input(self : Kcp, datagram : Bytes) -> Int32 {
 ///|
 /// 应用下发一消息(按 mss 分片,frg 倒计;ikcp_send 消息模式直译)。
 /// 返回字节数;超接收窗口分片数返回 -2。单片段零拷贝共享载荷。
-pub fn Kcp::send(self : Kcp, payload : Bytes) -> Int32 {
+pub fn Kcp::send(self : Kcp, payload : FixedArray[Byte]) -> Int32 {
   let length = payload.length()
   let mut count = if length <= self.mss {
     1
@@ -517,8 +519,9 @@ pub fn Kcp::send(self : Kcp, payload : Bytes) -> Int32 {
     let data = if count == 1 {
       payload
     } else {
-      let base = offset
-      Bytes::makei(size, fn(j) { payload[base + j] })
+      let frag : FixedArray[Byte] = FixedArray::make(size, 0b0)
+      FixedArray::unsafe_blit(frag, 0, payload, offset, size)
+      frag
     }
     let seg = KcpSegment::make(
       self.conv,
@@ -570,7 +573,7 @@ pub fn Kcp::peeksize(self : Kcp) -> Int32 {
 /// 应用读一整消息(碎片合并);队列空或碎片未齐返回 None。
 /// C ikcp_recv 序:先 peeksize 完整性判(负值拒读),后合并。
 /// 单片段零拷贝直返;多片段 FixedArray 直写合并。
-pub fn Kcp::recv(self : Kcp) -> Bytes? {
+pub fn Kcp::recv(self : Kcp) -> FixedArray[Byte]? {
   if self.rcv_queue.length() == 0 {
     return None
   }
@@ -590,15 +593,13 @@ pub fn Kcp::recv(self : Kcp) -> Bytes? {
     while self.rcv_queue.length() > 0 && fragment != 0 {
       let seg = self.rcv_queue.remove(0)
       let dl = seg.data.length()
-      let mut j = 0
-      while j < dl {
-        fa[off + j] = seg.data[j]
-        j += 1
+      if dl > 0 {
+        FixedArray::unsafe_blit(fa, off, seg.data, 0, dl)
       }
       off += dl
       fragment = seg.frg
     }
-    Bytes::from_array(fa)
+    fa
   }
   self.move_rcv_buf_to_queue()
   if recover && self.rcv_queue.length() < self.rcv_wnd {
@@ -629,7 +630,7 @@ fn write_le_u32(fa : FixedArray[Byte], offset : Int32, value : Int32) -> Unit {
 fn frame_roll(
   pending : Array[KcpSegment],
   size_box : Array[Int32],
-  frames : Array[Bytes],
+  frames : Array[FixedArray[Byte]],
   mtu : Int32,
   need : Int32,
 ) -> Unit {
@@ -646,7 +647,10 @@ fn frame_roll(
 
 ///|
 /// 帧成形:段引用序列 → 一条 Bytes(FixedArray 直写 + from_fixedarray)。
-fn materialize_frame(pending : Array[KcpSegment], total : Int32) -> Bytes {
+fn materialize_frame(
+  pending : Array[KcpSegment],
+  total : Int32,
+) -> FixedArray[Byte] {
   let fa : FixedArray[Byte] = FixedArray::make(total, 0b0)
   let mut off = 0
   let mut i = 0
@@ -661,22 +665,20 @@ fn materialize_frame(pending : Array[KcpSegment], total : Int32) -> Bytes {
     write_le_u32(fa, off + 16, seg.una)
     let data_len = seg.data.length()
     write_le_u32(fa, off + 20, data_len)
-    let mut j = 0
-    while j < data_len {
-      fa[off + 24 + j] = seg.data[j]
-      j += 1
+    if data_len > 0 {
+      FixedArray::unsafe_blit(fa, off + 24, seg.data, 0, data_len)
     }
     off += 24 + data_len
     i += 1
   }
-  Bytes::from_array(fa)
+  fa
 }
 
 ///|
 /// flush(ikcp_flush 直译):ACK 先行 → 探窗 → snd_queue 进窗 →
 /// 数据段首发/超时重发/快速重发 → 拥塞窗结算。返回出帧列表。
-pub fn Kcp::flush_frames(self : Kcp) -> Array[Bytes] {
-  let frames : Array[Bytes] = []
+pub fn Kcp::flush_frames(self : Kcp) -> Array[FixedArray[Byte]] {
+  let frames : Array[FixedArray[Byte]] = []
   if self.updated == 0 {
     return frames
   }
@@ -703,7 +705,7 @@ pub fn Kcp::flush_frames(self : Kcp) -> Array[Bytes] {
       ack_ts,
       ack_sn,
       self.rcv_nxt,
-      Bytes::make(0, 0b0),
+      FixedArray::make(0, 0b0),
     )
     pending.push(ack_seg)
     size_box[0] += HEADER_SIZE
@@ -741,7 +743,7 @@ pub fn Kcp::flush_frames(self : Kcp) -> Array[Bytes] {
       last_ack_ts,
       last_ack_sn,
       self.rcv_nxt,
-      Bytes::make(0, 0b0),
+      FixedArray::make(0, 0b0),
     )
     pending.push(wask)
     size_box[0] += HEADER_SIZE
@@ -756,7 +758,7 @@ pub fn Kcp::flush_frames(self : Kcp) -> Array[Bytes] {
       last_ack_ts,
       last_ack_sn,
       self.rcv_nxt,
-      Bytes::make(0, 0b0),
+      FixedArray::make(0, 0b0),
     )
     pending.push(wins)
     size_box[0] += HEADER_SIZE
@@ -867,7 +869,7 @@ pub fn Kcp::flush_frames(self : Kcp) -> Array[Bytes] {
 ///|
 /// 时间推进(ikcp_update 直译,纯形):到 interval 点则 flush,
 /// 返回本次出帧(未到点返回空表)。
-pub fn Kcp::update(self : Kcp, current : Int32) -> Array[Bytes] {
+pub fn Kcp::update(self : Kcp, current : Int32) -> Array[FixedArray[Byte]] {
   self.current = current
   if self.updated == 0 {
     self.updated = 1

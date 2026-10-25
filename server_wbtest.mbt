@@ -46,7 +46,7 @@ fn pump_server(
 }
 
 ///|
-fn drain_session(session : KcpSession, out : Array[Bytes]) -> Unit {
+fn drain_session(session : KcpSession, out : Array[FixedArray[Byte]]) -> Unit {
   let mut go = true
   while go {
     match session.poll_message() {
@@ -74,13 +74,13 @@ test "server demuxes two convs without cross-talk" {
   assert_eq(server.size(), 2)
   let mut tag = 1
   while tag <= 3 {
-    assert_eq(sa.poll_message(), Some(mk_payload(tag, 20)))
+    assert_msg(sa.poll_message(), mk_payload(tag, 20))
     tag += 1
   }
   assert_eq(sa.poll_message(), None)
   let mut tag = 1
   while tag <= 3 {
-    assert_eq(sb.poll_message(), Some(mk_payload(tag + 10, 22)))
+    assert_msg(sb.poll_message(), mk_payload(tag + 10, 22))
     tag += 1
   }
   assert_eq(sb.poll_message(), None)
@@ -124,12 +124,12 @@ test "server routes fragmented messages per conv" {
   }
   pump_server(server, [cb], 0, 40)
   let sb = server.session_of(777) |> unwrap_session
-  let inbox : Array[Bytes] = []
+  let inbox : Array[FixedArray[Byte]] = []
   drain_session(sb, inbox)
   assert_eq(inbox.length(), 3)
   let mut tag = 1
   while tag <= 3 {
-    assert_eq(inbox[tag - 1], mk_payload(tag, 250))
+    assert_fa_eq(inbox[tag - 1], mk_payload(tag, 250))
     tag += 1
   }
 }
