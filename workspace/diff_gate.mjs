@@ -3,7 +3,7 @@
 // (moonkcp/workspace/diff_driver),帧转录逐行 diff,终判 KCPDIFF:PASS/FAIL。
 //
 // 用法(仓根):node moonkcp/workspace/diff_gate.mjs
-// 依赖:gcc(moonkcp/bak/kcp 现场编译参照驱动)、moon(MoonBit 驱动现场跑)。
+// 依赖:gcc(moonkcp/.tests/kcp 现场编译参照驱动)、moon(MoonBit 驱动现场跑)。
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -25,8 +25,8 @@ try {
     [
       "-O2",
       "-I",
-      "bak/kcp",
-      "bak/kcp/ikcp.c",
+      ".tests/kcp",
+      ".tests/kcp/ikcp.c",
       "workspace/diff_driver.c",
       "-o",
       cbin,

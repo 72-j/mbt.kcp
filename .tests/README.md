@@ -1,4 +1,4 @@
-# bak/kcp — C 参照(vendored)
+# .tests/kcp — C 参照(vendored)
 
 - 源:skywind3000/kcp(MIT License,本目录 LICENSE 为其原文)
 - 用途:K5 差分对拍参照——`workspace/diff_gate.mjs` / `workspace/bench.mjs`

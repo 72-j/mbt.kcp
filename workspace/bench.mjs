@@ -22,8 +22,8 @@ try {
     [
       "-O2",
       "-I",
-      "bak/kcp",
-      "bak/kcp/ikcp.c",
+      ".tests/kcp",
+      ".tests/kcp/ikcp.c",
       "workspace/bench_driver.c",
       "-o",
       cbin,

@@ -6,7 +6,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 
 | 材料 | 角色 |
 |---|---|
-| skywind3000/kcp(C 原始实现,bak/kcp/) | 协议权威参照 + K5 差分对拍基准 |
+| skywind3000/kcp(C 原始实现,.tests/kcp/) | 协议权威参照 + K5 差分对拍基准 |
 | RFC 6298(RTT 平滑) | RTO 计算规范 |
 | moonbitlang/async socket | K4 UDP adapter 底座 |
 
@@ -18,7 +18,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | D-KCP2 | update 循环 = 纯函数(`update(current) → 帧[]`) | 零时钟、ms 注入——与 lib/realtime hub 同律 |
 | D-KCP3 | transport = adapter(async UDP socket 归 K4) | 协议核心零 IO |
 | D-KCP4 | 全 Int 制(UInt 弃用) | itimediff 在 Int 32 位回绕下与 C IINT32 位等价(测试钉) |
-| D-KCP5 | FASTACK_CONSERVE 变体 | 同本仓 C 参照(bak/kcp `#define` 开) |
+| D-KCP5 | FASTACK_CONSERVE 变体 | 同本仓 C 参照(.tests/kcp `#define` 开) |
 | D-KCP6 | 消息模式 only(stream=0) | 文档编辑场景是消息面;stream 追加模式不在需求面 |
 
 ## 3. 役账

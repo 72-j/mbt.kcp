@@ -119,12 +119,12 @@ node workspace/bench.mjs
 | 真 UDP 回环（双端直连与多会话宿主） | 5 / 5 |
 | 纯核吞吐基准（64 MB，窗 512，release） | 约 77–89 万消息/秒/核 |
 
-`bak/kcp/` 内为差分对拍所用 C 参照（skywind3000/kcp 的 `ikcp.c` /
-`ikcp.h` 精简收录，原件未修改），出处见 `bak/README.md`。
+`.tests/kcp/` 内为差分对拍所用 C 参照（skywind3000/kcp 的 `ikcp.c` /
+`ikcp.h` 精简收录，原件未修改），出处见 `.tests/README.md`。
 
 ## 许可证
 
 - 本项目代码采用木兰宽松许可证第 2 版（MulanPSL-2.0，见 `LICENSE`）。
-- `bak/kcp/` 内 C 参照文件按 MIT 许可分发，版权归其原作者。
+- `.tests/kcp/` 内 C 参照文件按 MIT 许可分发，版权归其原作者。
 - 无背书声明：文中对拍与基准计数为本项目自测结果，不构成任何第三方
   的认证或背书。
