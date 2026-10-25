@@ -18,7 +18,9 @@ async fn main {
       let got = try @async.with_timeout_opt(20, () => hub.recv_one()) catch {
         _ => None
       }
-      let _ = got
+      if got is Some(n) {
+        println("[dbg] recv n=\{n}")
+      }
       // 排收件箱 → 会话(recv_one 已直喂;此处兼容注入形)
       while inbox.length() > 0 {
         let datagram = inbox.remove(0)
@@ -47,7 +49,11 @@ async fn main {
         let _ = hub.sweep(t, 30000)
         next_sweep = t + 5000
       }
-      let _ = hub.pump_out(t)
+      // 向已退客户端端口的 sendto 会遭 ICMP refused 毒化 socket——
+      // 泵的瞬态错误必须吞掉,否则中继主环崩死(全员失联)
+      let _ = try hub.pump_out(t) catch {
+        _ => []
+      }
       t = @async.now().to_int()
       let _ = @async.sleep(20)
     }
