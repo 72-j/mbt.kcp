@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "thy1016/moonkcp/rt_relay"
+
+// Values
+pub fn frame_bytes(String) -> FixedArray[Byte]
+
+pub fn frame_text(FixedArray[Byte], Int) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Member {
+  user : String
+  mut last_seen : Int
+}
+
+pub(all) struct RtRelay {
+  rooms : Map[String, Map[Int, Member]]
+  max_members : Int
+}
+pub fn RtRelay::new(Int) -> Self
+pub fn RtRelay::on_frame(Self, Int, Int, String) -> Array[(Int, String)]
+pub fn RtRelay::size(Self, String) -> Int
+pub fn RtRelay::sweep(Self, Int, Int) -> Array[(String, Int)]
+
+// Type aliases
+
+// Traits

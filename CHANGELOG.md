@@ -3,6 +3,25 @@
 本文件面向**使用者**，记录每版对外可见的变化（API / 行为 / 兼容性 / 工程）。
 判据与规范细节见 `spec.md`（本仓规范卷）。
 
+## 未发布（0.2.0 候选）
+
+**破坏性：应用载荷面 API 类型变更** `Bytes` → `FixedArray[Byte]`（刀2a
+批量拷贝优化）：`Kcp::send` / `Kcp::recv` / `KcpSession::send_message` /
+`poll_message` 及相关面的载荷参数与返回值翻面；调用方载荷构造改用
+`FixedArray::makei`。行为零变更（差分对拍逐字节一致）。
+
+新增：
+
+- **多会话服务端 `KcpServer`**（conv 路由 / 自动建会话 / 洪泛护栏 /
+  闲置回收 `sweep`）与 **服务端组合宿主 `KcpUdpHub`**（conv→地址自学习）。
+- **观测面 `Kcp::stats`**（RTT/RTO/拥塞窗/队列/超时重传计数/接收守恒账）。
+- **原生实时中继 `rt_relay`**（§6.5 帧协议：房表 / 扇出 / presence /
+  闲置清扫）+ `rt_relay/cmd` 可执行壳。
+- `examples/`：echo 服务端与对打客户端（真 UDP 回环可跑）。
+
+性能：release 构建纯核吞吐约 77–89 万消息/秒/核（较 0.1.0 发布件提升
+约 2.3–2.6×；构建档位与批量拷贝两笔）。
+
 ## 0.1.0（2026-10-25）
 
 首发版：KCP 协议的 MoonBit 纯实现，与 skywind3000/kcp C 参照保持差分

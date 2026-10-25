@@ -54,6 +54,9 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 
 | 版本 | 日期 | 内容 |
 |---|---|---|
+| v0.12 | 2026-10-25 | 抽仓立户(thy1016/moonkcp 子模块 mbt.kcp,MulanPSL-2.0,发布 mooncakes 0.1.0,tag v0.1.0)+ examples 双示例(真 UDP 实跑)+ 性能役(基线重锚 release + 刀2a FixedArray[Byte]+unsafe_blit:343k→887k pps,对 C 比值 5.1×→2.0-2.3×,收兵) |
+| v0.11 | 2026-10-25 | 差分加压(乱序+真停摆,102 帧无屏蔽逐字节全同;逮到 set_wnd 漏 imax 钳制直译偏差)+ K6 KcpServer conv 分离器 + 收尾役三件套(stats 观测面/sweep 闲置回收/K7 KcpUdpHub 组合宿主)+ 域门 cwd 迁移 |
+| v0.10 | 2026-10-25 | bak/ 更名 .tests/(C 参照库藏)引用面回灌 |
 | v0.9 | 2026-10-25 | **收尾役三件套**:观测面(KcpStats 快照 + xmit_total 超时重传计数 + last_active 活性戳)/ 闲置回收(KcpServer::sweep 宿主注入时钟清扫)/ K7 KcpUdpHub 服务端组合宿主(UdpServer + KcpServer + conv→Addr 表,真 UDP 多客户端回环门:路由不串线/回程/洪泛护栏/闲置清扫/逐后重建);28/28 + 5/5 + KCPDIFF:PASS |
 | v0.8 | 2026-10-25 | K6 KcpServer conv 分离器:多会话路由/未知 conv 自动建/洪泛护栏(max_sessions,-4 弃包)/remove 收尸;tick 返 (conv, 帧) 宿主自持 conv→地址映射;26/26 绿 |
 | v0.7 | 2026-10-25 | 刀1 Bytes 线格式端到端:send 零拷贝共享/帧 FixedArray 直写组装/input·recv 单趟 makei;KCPDIFF 全同证等价;bench 11.5×(12,072→138,553 pps),与 C 比值 146×→12.6×(茗篇 §2 回灌) |
