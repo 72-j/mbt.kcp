@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "thy1016/bitbang/moonkcp/adapter"
+
+import {
+  "moonbitlang/async/socket",
+  "thy1016/bitbang/moonkcp",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct KcpUdpHub {
+  server : @moonkcp.KcpServer
+  // private fields
+}
+pub fn KcpUdpHub::convs(Self) -> Array[Int]
+pub async fn KcpUdpHub::listen(Int, Int) -> Self
+pub fn KcpUdpHub::local_addr(Self) -> @socket.Addr
+pub fn KcpUdpHub::poll_message(Self, Int) -> Bytes?
+pub async fn KcpUdpHub::pump_out(Self, Int) -> Array[(Int, Int)]
+pub async fn KcpUdpHub::recv_one(Self) -> Int
+pub fn KcpUdpHub::send_message_to(Self, Int, Bytes) -> Int
+pub fn KcpUdpHub::sweep(Self, Int, Int) -> Array[Int]
+
+pub struct KcpUdpPeer {
+  session : @moonkcp.KcpSession
+  // private fields
+}
+pub async fn KcpUdpPeer::connect_client(Int, Int, @socket.Addr) -> Self
+pub async fn KcpUdpPeer::listen_server(Int, Int) -> Self
+pub fn KcpUdpPeer::local_addr(Self) -> @socket.Addr
+pub fn KcpUdpPeer::poll_message(Self) -> Bytes?
+pub async fn KcpUdpPeer::pump_out(Self, Int) -> Int
+pub async fn KcpUdpPeer::recv_one(Self) -> Int
+pub fn KcpUdpPeer::send_message(Self, Bytes) -> Int
+
+// Type aliases
+
+// Traits

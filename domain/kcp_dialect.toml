@@ -1,0 +1,67 @@
+# kcp_dialect.toml — KCP 协议词表(协议即数据;gen 由此生成 codec)
+# 修改此文件 + moon run gen → 再生 MoonBit codec
+
+[module]
+name = "moonkcp"
+
+[segment]
+header_size = 24
+
+[[segment.field]]
+name = "conv"
+offset = 0
+size = 4
+type = "u32"
+
+[[segment.field]]
+name = "cmd"
+offset = 4
+size = 1
+type = "u8"
+
+[[segment.field]]
+name = "frg"
+offset = 5
+size = 1
+type = "u8"
+
+[[segment.field]]
+name = "wnd"
+offset = 6
+size = 2
+type = "u16"
+
+[[segment.field]]
+name = "ts"
+offset = 8
+size = 4
+type = "u32"
+
+[[segment.field]]
+name = "sn"
+offset = 12
+size = 4
+type = "u32"
+
+[[segment.field]]
+name = "una"
+offset = 16
+size = 4
+type = "u32"
+
+[[segment.field]]
+name = "len"
+offset = 20
+size = 4
+type = "u32"
+
+[commands]
+PUSH = 81
+ACK = 82
+WASK = 83
+WINS = 84
+
+[defaults]
+mtu = 1400
+rto_min = 100
+ssthresh_init = 65535

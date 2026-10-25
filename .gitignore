@@ -1,0 +1,12 @@
+.DS_Store
+_build/
+.mooncakes/
+.vscode/
+.repos/
+*.log
+*.bak
+# ---- 活账不入库(与主仓同律):todo = 役账,ctx = 即时坐标 ----
+todo.md
+ctx.md
+const.md
+.mingspace/

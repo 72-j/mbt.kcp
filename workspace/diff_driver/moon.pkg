@@ -1,0 +1,5 @@
+import {
+  "thy1016/moonkcp",
+}
+
+pkgtype(kind: "executable")

@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/async/socket",
+  "thy1016/moonkcp",
+}
+
+import {
+  "moonbitlang/async",
+} for "test"
+
+options(
+  targets: { "kcp_udp.mbt": [ "native" ], "kcp_udp_test.mbt": [ "native" ] },
+)
