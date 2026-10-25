@@ -1,5 +1,6 @@
 import {
   "moonbitlang/async/socket",
+  "moonbitlang/core/encoding/utf8",
   "thy1016/moonkcp",
 }
 

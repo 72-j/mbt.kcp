@@ -30,3 +30,22 @@ moon run client --target native -- 127.0.0.1:42218
 
 工作空间 `moon.work` 以 `..` 成员挂本 checkout——示例构建不依赖已发布
 版本。
+
+## rt-telnet(中继诊断 CLI)
+
+对 `rt_relay` 中继的手动验收/诊断工具,两模式:
+
+```bash
+# 终端 1:中继
+moon run ../rt_relay/cmd --target native
+
+# 终端 2:监听者
+moon run rt-telnet --target native -- 127.0.0.1:PORT listen bob doc1 12000
+
+# 终端 3:发送者
+moon run rt-telnet --target native -- 127.0.0.1:PORT send alice doc1 "hello"
+```
+
+alice 的 op 经中继扇出到 bob(排除发送者),bob 以净 JSON 打印。conv 每
+次运行自动轮换(时间窗 ⊕ user 哈希)——客户端重启即新端点,中继陈旧
+会话闲置老化。

@@ -16,6 +16,7 @@ fn bytes_of(buf : FixedArray[Byte], n : Int) -> FixedArray[Byte] {
   wire
 }
 
+
 ///|
 /// KCP 会话的 UDP 末端:session + client(A 侧)或 server(B 侧)。
 pub struct KcpUdpPeer {
@@ -50,6 +51,34 @@ pub async fn KcpUdpPeer::listen_server(
     client: None,
     server: Some(server),
     peer_addr: None,
+  }
+}
+
+///|
+/// 收件循环原语(后台收件任务专用):阻塞收一报,exact-size 切片推入
+/// 收件箱;B 侧顺带学对端地址。取消安全——收件箱无锁,主环只读不取消。
+pub async fn KcpUdpPeer::recv_into(
+  self : KcpUdpPeer, inbox : Array[FixedArray[Byte]]
+) -> Unit {
+  let buf : FixedArray[Byte] = FixedArray::make(2048, 0b0)
+  // recv 错误吞掉续跑:已退客户端的 ICMP refused 会毒化 socket(下一发
+  // recv 即抛)——不吞则后台收件任务静默死亡,中继永久失聪。
+  let n = try (match self.client {
+    Some(client) => client.recv(buf)
+    None =>
+      match self.server {
+        Some(server) => {
+          let (n, addr) = server.recvfrom(buf)
+          self.peer_addr = Some(addr)
+          n
+        }
+        None => 0
+      }
+  }) catch {
+    _ => 0
+  }
+  if n > 0 {
+    inbox.push(bytes_of(buf, n))
   }
 }
 
@@ -239,4 +268,21 @@ pub fn KcpUdpHub::sweep(
     i += 1
   }
   evicted
+}
+
+///|
+/// 收件循环原语(服务端组合宿主版):阻塞收报 + conv→地址自学习,
+/// exact-size 切片推入收件箱。取消安全同 peer 版。
+pub async fn KcpUdpHub::recv_into(
+  self : KcpUdpHub, inbox : Array[FixedArray[Byte]]
+) -> Unit {
+  let buf : FixedArray[Byte] = FixedArray::make(2048, 0b0)
+  let (n, addr) = self.udp.recvfrom(buf)
+  if n >= 4 {
+    let conv = buf[0].to_int() | (buf[1].to_int() << 8) | (buf[2].to_int() << 16) | (buf[3].to_int() << 24)
+    self.addrs[conv] = addr
+  }
+  if n > 0 {
+    inbox.push(bytes_of(buf, n))
+  }
 }
