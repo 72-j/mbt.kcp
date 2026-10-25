@@ -1,0 +1,7 @@
+import {
+  "thy1016/moonkcp/adapter",
+  "thy1016/moonkcp/rt_relay",
+  "moonbitlang/async",
+}
+
+pkgtype(kind: "executable")
