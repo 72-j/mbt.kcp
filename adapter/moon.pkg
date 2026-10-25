@@ -7,6 +7,12 @@ import {
   "moonbitlang/async",
 } for "test"
 
+warnings = "-unused_package"
+
 options(
-  targets: { "kcp_udp.mbt": [ "native" ], "kcp_udp_test.mbt": [ "native" ] },
+  targets: {
+    "kcp_udp.mbt": [ "native" ],
+    "kcp_udp_test.mbt": [ "native" ],
+    "kcp_hub_test.mbt": [ "native" ],
+  },
 )
