@@ -1,0 +1,9 @@
+import {
+  "thy1016/moonkcp/adapter",
+  "thy1016/moonkcp/secchan",
+  "moonbitlang/async",
+  "moonbitlang/async/socket",
+  "moonbitlang/core/encoding/utf8",
+}
+
+pkgtype(kind: "executable")
