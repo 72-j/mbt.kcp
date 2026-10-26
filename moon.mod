@@ -14,4 +14,5 @@ description = "MoonKCP — KCP 协议 MoonBit 纯实现（零 IO 零时钟纯状
 
 import {
   "moonbitlang/async@0.22.4",
+  "cc06b/mooncry@0.95.0",
 }

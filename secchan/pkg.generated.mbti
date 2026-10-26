@@ -1,0 +1,85 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "thy1016/moonkcp/secchan"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn derive_keys(Bytes, Bytes, Bytes) -> SessionKeys
+
+pub fn pskcr_client_start(psk~ : Bytes, client_nonce~ : Bytes) -> (PskCrMsg, PskCrClient)
+
+pub fn pskcr_server_on_hello(psk~ : Bytes, server_nonce~ : Bytes, msg~ : PskCrMsg) -> Result[(PskCrMsg, PskCrServer), PskCrErr]
+
+// Errors
+
+// Types and methods
+pub struct Opener {
+  key : Bytes
+  mut highest : UInt64
+  mut bits : UInt64
+}
+pub fn Opener::new(key~ : Bytes) -> Self
+pub fn Opener::open(Self, aad~ : Bytes, record~ : Bytes) -> Bytes?
+
+pub(all) struct PskCrClient {
+  psk : Bytes
+  client_nonce : Bytes
+}
+pub fn PskCrClient::on_salt(Self, msg~ : PskCrMsg) -> Result[(PskCrMsg, SessionKeys), PskCrErr]
+
+pub(all) enum PskCrErr {
+  BadState(String)
+  BadWire(String)
+  AuthFail
+} derive(Eq, @debug.Debug)
+pub fn PskCrErr::equal(Self, Self) -> Bool
+pub fn PskCrErr::not_equal(Self, Self) -> Bool
+pub fn PskCrErr::to_repr(Self) -> @debug.Repr
+
+pub(all) enum PskCrMsg {
+  Hello(Bytes)
+  Salt(Bytes)
+  Auth(Bytes)
+} derive(Eq, @debug.Debug)
+pub fn PskCrMsg::equal(Self, Self) -> Bool
+pub fn PskCrMsg::not_equal(Self, Self) -> Bool
+pub fn PskCrMsg::of_wire(Bytes) -> Self?
+pub fn PskCrMsg::to_repr(Self) -> @debug.Repr
+pub fn PskCrMsg::to_wire(Self) -> Bytes
+
+pub(all) struct PskCrServer {
+  psk : Bytes
+  client_nonce : Bytes
+  server_nonce : Bytes
+}
+pub fn PskCrServer::on_auth(Self, msg~ : PskCrMsg) -> Result[SessionKeys, PskCrErr]
+
+pub struct Sealer {
+  key : Bytes
+  mut seq : UInt64
+}
+pub fn Sealer::new(key~ : Bytes) -> Self
+pub fn Sealer::seal(Self, aad~ : Bytes, plaintext~ : Bytes) -> Bytes
+
+pub struct SecSession {
+  sealer : Sealer
+  opener : Opener
+}
+pub fn SecSession::client(keys~ : SessionKeys) -> Self
+pub fn SecSession::open(Self, aad~ : Bytes, record~ : Bytes) -> Bytes?
+pub fn SecSession::seal(Self, aad~ : Bytes, plaintext~ : Bytes) -> Bytes
+pub fn SecSession::server(keys~ : SessionKeys) -> Self
+
+pub(all) struct SessionKeys {
+  key_c2s : Bytes
+  key_s2c : Bytes
+} derive(Eq, @debug.Debug)
+pub fn SessionKeys::equal(Self, Self) -> Bool
+pub fn SessionKeys::not_equal(Self, Self) -> Bool
+pub fn SessionKeys::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

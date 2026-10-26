@@ -1,0 +1,4 @@
+import {
+  "cc06b/mooncry/lib",
+  "moonbitlang/core/debug",
+}
