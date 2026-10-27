@@ -1,0 +1,10 @@
+// quicktest:K10 KCP quicktest(qcs quickcheck_statemachine 形)——
+// 随机 Send×Tick×Deliver×Drop 序列下守恒/有序属性检查。
+// 骨架件 = pbtgen/kcp/cmd 生成产物(黄金门:再生 ≡ 入库,逐字节);
+// SUT = KcpSession 会话对 + 双向线材(纯形,零 IO 零时钟)。
+
+import {
+  "moonbit-community/quickcheck_statemachine" @qcs,
+  "moonbitlang/core/quickcheck/splitmix",
+  "thy1016/moonkcp" @kcp,
+}
