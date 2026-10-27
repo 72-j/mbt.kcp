@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "thy1016/bitbang/moonkcp/adapter"
+package "thy1016/moonkcp/adapter"
 
 import {
   "moonbitlang/async/socket",
-  "thy1016/bitbang/moonkcp",
+  "thy1016/moonkcp",
 }
 
 // Values
@@ -15,26 +15,28 @@ pub struct KcpUdpHub {
   server : @moonkcp.KcpServer
   // private fields
 }
-pub fn KcpUdpHub::convs(Self) -> Array[Int]
-pub async fn KcpUdpHub::listen(Int, Int) -> Self
+pub fn KcpUdpHub::convs(Self) -> Array[Int32]
+pub async fn KcpUdpHub::listen(Int32, Int32) -> Self
 pub fn KcpUdpHub::local_addr(Self) -> @socket.Addr
-pub fn KcpUdpHub::poll_message(Self, Int) -> Bytes?
-pub async fn KcpUdpHub::pump_out(Self, Int) -> Array[(Int, Int)]
-pub async fn KcpUdpHub::recv_one(Self) -> Int
-pub fn KcpUdpHub::send_message_to(Self, Int, Bytes) -> Int
-pub fn KcpUdpHub::sweep(Self, Int, Int) -> Array[Int]
+pub fn KcpUdpHub::poll_message(Self, Int32) -> FixedArray[Byte]?
+pub async fn KcpUdpHub::pump_out(Self, Int32) -> Array[(Int32, Int32)]
+pub async fn KcpUdpHub::recv_into(Self, Array[FixedArray[Byte]]) -> Unit
+pub async fn KcpUdpHub::recv_one(Self) -> Int32
+pub fn KcpUdpHub::send_message_to(Self, Int32, FixedArray[Byte]) -> Int32
+pub fn KcpUdpHub::sweep(Self, Int32, Int32) -> Array[Int32]
 
 pub struct KcpUdpPeer {
   session : @moonkcp.KcpSession
   // private fields
 }
-pub async fn KcpUdpPeer::connect_client(Int, Int, @socket.Addr) -> Self
-pub async fn KcpUdpPeer::listen_server(Int, Int) -> Self
+pub async fn KcpUdpPeer::connect_client(Int32, Int32, @socket.Addr) -> Self
+pub async fn KcpUdpPeer::listen_server(Int32, Int32) -> Self
 pub fn KcpUdpPeer::local_addr(Self) -> @socket.Addr
-pub fn KcpUdpPeer::poll_message(Self) -> Bytes?
-pub async fn KcpUdpPeer::pump_out(Self, Int) -> Int
-pub async fn KcpUdpPeer::recv_one(Self) -> Int
-pub fn KcpUdpPeer::send_message(Self, Bytes) -> Int
+pub fn KcpUdpPeer::poll_message(Self) -> FixedArray[Byte]?
+pub async fn KcpUdpPeer::pump_out(Self, Int32) -> Int32
+pub async fn KcpUdpPeer::recv_into(Self, Array[FixedArray[Byte]]) -> Unit
+pub async fn KcpUdpPeer::recv_one(Self) -> Int32
+pub fn KcpUdpPeer::send_message(Self, FixedArray[Byte]) -> Int32
 
 // Type aliases
 

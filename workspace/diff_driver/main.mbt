@@ -12,7 +12,7 @@
 // 尾行 `done <side> <累计收字节数>` = 收敛验讫。
 
 ///|
-let conv_id : Int = 0x12345678
+let conv_id : Int32 = 0x12345678
 
 ///|
 let hex_table : Array[String] = [
@@ -23,17 +23,17 @@ let hex_table : Array[String] = [
 /// LCG 确定性抽签盒:状态单格(引用语义,跨函数推进可见)。
 /// C 侧 `x = x * 1664525u + 1013904223u` 同式(Int 32 位回绕等价)。
 struct LossBox {
-  mut state : Int
+  mut state : Int32
 }
 
 ///|
-fn LossBox::make(seed : Int) -> LossBox {
+fn LossBox::make(seed : Int32) -> LossBox {
   { state: seed, }
 }
 
 ///|
 /// 抽一签:推进状态,回正 31 位值。
-fn LossBox::draw(self : LossBox) -> Int {
+fn LossBox::draw(self : LossBox) -> Int32 {
   self.state = self.state * 1664525 + 1013904223
   self.state & 0x7FFFFFFF
 }
@@ -46,18 +46,22 @@ fn LossBox::drop(self : LossBox) -> Bool {
 
 ///|
 /// 确定性载荷:(tag * 37 + j) & 0x7F——C 侧同式。
-fn payload_of(msg_tag : Int, length : Int) -> FixedArray[Byte] {
+fn payload_of(msg_tag : Int32, length : Int32) -> FixedArray[Byte] {
   FixedArray::makei(length, fn(j) { ((msg_tag * 37 + j) & 0x7F).to_byte() })
 }
 
 ///|
-fn byte_hex(sb : StringBuilder, b : Int) -> Unit {
+fn byte_hex(sb : StringBuilder, b : Int32) -> Unit {
   sb.write(hex_table[(b >> 4) & 15])
   sb.write(hex_table[b & 15])
 }
 
 ///|
-fn print_frames(round : Int, side : String, frames : Array[FixedArray[Byte]]) -> Unit {
+fn print_frames(
+  round : Int32,
+  side : String,
+  frames : Array[FixedArray[Byte]],
+) -> Unit {
   for frame in frames {
     let sb = StringBuilder()
     sb.write("\{round} ")
@@ -75,16 +79,15 @@ fn print_frames(round : Int, side : String, frames : Array[FixedArray[Byte]]) ->
 ///|
 /// 带损投递一帧列(倒序判定已先抽):每帧一抽判丢。
 fn deliver_lossy(
-  loss : LossBox, frames : Array[FixedArray[Byte]], to : @moonkcp.Kcp, reversed : Bool
+  loss : LossBox,
+  frames : Array[FixedArray[Byte]],
+  to : @moonkcp.Kcp,
+  reversed : Bool,
 ) -> Unit {
   let n = frames.length()
   let mut i = 0
   while i < n {
-    let idx = if reversed {
-      n - 1 - i
-    } else {
-      i
-    }
+    let idx = if reversed { n - 1 - i } else { i }
     if loss.drop() == false {
       let _ = to.input(frames[idx])
     }
@@ -94,7 +97,7 @@ fn deliver_lossy(
 
 ///|
 /// 驱动末尾:排空一端全部消息,累计收字节数。
-fn total_received(kcp : @moonkcp.Kcp) -> Int {
+fn total_received(kcp : @moonkcp.Kcp) -> Int32 {
   let mut total = 0
   let mut go = true
   while go {

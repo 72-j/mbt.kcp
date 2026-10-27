@@ -4,24 +4,24 @@ package "thy1016/moonkcp/rt_relay"
 // Values
 pub fn frame_bytes(String) -> FixedArray[Byte]
 
-pub fn frame_text(FixedArray[Byte], Int) -> String
+pub fn frame_text(FixedArray[Byte], Int32) -> String
 
 // Errors
 
 // Types and methods
 pub(all) struct Member {
   user : String
-  mut last_seen : Int
+  mut last_seen : Int32
 }
 
 pub(all) struct RtRelay {
-  rooms : Map[String, Map[Int, Member]]
-  max_members : Int
+  rooms : Map[String, Map[Int32, Member]]
+  max_members : Int32
 }
-pub fn RtRelay::new(Int) -> Self
-pub fn RtRelay::on_frame(Self, Int, Int, String) -> Array[(Int, String)]
-pub fn RtRelay::size(Self, String) -> Int
-pub fn RtRelay::sweep(Self, Int, Int) -> Array[(String, Int)]
+pub fn RtRelay::new(Int32) -> Self
+pub fn RtRelay::on_frame(Self, Int32, Int32, String) -> Array[(Int32, String)]
+pub fn RtRelay::size(Self, String) -> Int32
+pub fn RtRelay::sweep(Self, Int32, Int32) -> Array[(String, Int32)]
 
 // Type aliases
 

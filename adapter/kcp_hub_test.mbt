@@ -7,12 +7,12 @@
 async fn drive_hub(
   hub : @adapter.KcpUdpHub,
   clients : Array[@adapter.KcpUdpPeer],
-  start_ms : Int,
-  ticks : Int
-) -> Array[(Int, Int)] raise {
+  start_ms : Int32,
+  ticks : Int32,
+) -> Array[(Int32, Int32)] {
   let mut t = start_ms
   let mut tick = 0
-  let mut last_tagged : Array[(Int, Int)] = []
+  let mut last_tagged : Array[(Int32, Int32)] = []
   while tick < ticks {
     let mut total = 0
     for client in clients {
@@ -130,11 +130,7 @@ async test "K7: flood cap rejects third conv, sweep frees slot" {
     for entry in tagged {
       let (conv, n) = entry
       // 按 conv 路由回投——202 的 ACK 在 cb 的 socket 上,错拿 ca 收即永阻
-      let peer = if conv == 101 {
-        ca
-      } else {
-        cb
-      }
+      let peer = if conv == 101 { ca } else { cb }
       let mut r = 0
       while r < n {
         let _ = peer.recv_one()

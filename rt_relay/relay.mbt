@@ -9,20 +9,20 @@
 /// 公开仅因其出现在公开房表字段类型中;消费方不构造(Envelope 同律)。
 pub(all) struct Member {
   user : String
-  mut last_seen : Int
+  mut last_seen : Int32
 }
 
 ///|
 /// 实时中继核:房表(topic → conv → member)+ 扇出 + presence。
 pub(all) struct RtRelay {
-  rooms : Map[String, Map[Int, Member]]
-  max_members : Int
+  rooms : Map[String, Map[Int32, Member]]
+  max_members : Int32
 }
 
 ///|
 /// 新中继:max_members = 每房成员上限(洪泛护栏)。
-pub fn RtRelay::new(max_members : Int) -> RtRelay {
-  { rooms: Map([]), max_members }
+pub fn RtRelay::new(max_members : Int32) -> RtRelay {
+  { rooms: Map([]), max_members, }
 }
 
 ///|
@@ -73,7 +73,7 @@ fn jlit_into(sb : StringBuilder, s : String) -> Unit {
 }
 
 ///|
-fn hexdigit(v : Int) -> String {
+fn hexdigit(v : Int32) -> String {
   let digits = "0123456789abcdef"
   let sb = StringBuilder()
   sb.write(digits[(v >> 4) & 15])
@@ -81,6 +81,7 @@ fn hexdigit(v : Int) -> String {
   sb.to_string()
 }
 
+///|
 /// JSON 字符串字面量便捷形(转义写入)。
 fn jlit(s : String) -> String {
   let sb = StringBuilder()
@@ -131,12 +132,13 @@ fn json_write(sb : StringBuilder, j : Json) -> Unit {
 /// 入站一帧 → 出站 (conv, json) 表。畸形/未知 kind 静默弃(空表)。
 /// 每有效帧刷新发送者活跃戳。
 pub fn RtRelay::on_frame(
-  self : RtRelay, conv : Int, now : Int, text : String
-) -> Array[(Int, String)] {
-  let out : Array[(Int, String)] = []
-  let parsed = @json.parse(text) catch {
-    _ => return out
-  }
+  self : RtRelay,
+  conv : Int32,
+  now : Int32,
+  text : String,
+) -> Array[(Int32, String)] {
+  let out : Array[(Int32, String)] = []
+  let parsed = @json.parse(text) catch { _ => return out }
   let fields = match jfields(parsed) {
     Some(f) => f
     None => return out
@@ -200,12 +202,16 @@ pub fn RtRelay::on_frame(
 ///|
 /// 入房(容量护栏:满员弃新);已在房则刷新 user 与活跃戳。
 fn RtRelay::join(
-  self : RtRelay, topic : String, conv : Int, user : String, now : Int
+  self : RtRelay,
+  topic : String,
+  conv : Int32,
+  user : String,
+  now : Int32,
 ) -> Unit {
   let room = match self.rooms.get(topic) {
     Some(r) => r
     None => {
-      let r : Map[Int, Member] = Map([])
+      let r : Map[Int32, Member] = Map([])
       self.rooms[topic] = r
       r
     }
@@ -219,7 +225,7 @@ fn RtRelay::join(
       if room.length() >= self.max_members {
         return
       }
-      room[conv] = { user, last_seen: now }
+      room[conv] = { user, last_seen: now, }
     }
   }
 }
@@ -227,8 +233,11 @@ fn RtRelay::join(
 ///|
 /// 扇出:房内除发送者外的全部成员。
 fn RtRelay::fanout(
-  self : RtRelay, topic : String, sender : Int, body : String,
-  out : Array[(Int, String)]
+  self : RtRelay,
+  topic : String,
+  sender : Int32,
+  body : String,
+  out : Array[(Int32, String)],
 ) -> Unit {
   let room = match self.rooms.get(topic) {
     Some(r) => r
@@ -244,7 +253,9 @@ fn RtRelay::fanout(
 ///|
 /// presence 全量名单广播至房内全员。
 fn RtRelay::broadcast_presence(
-  self : RtRelay, topic : String, out : Array[(Int, String)]
+  self : RtRelay,
+  topic : String,
+  out : Array[(Int32, String)],
 ) -> Unit {
   let room = match self.rooms.get(topic) {
     Some(r) => r
@@ -271,9 +282,11 @@ fn RtRelay::broadcast_presence(
 /// 闲置清扫:now - last_seen > ttl 的成员逐出,受影响房广播 presence。
 /// 返回被逐 (topic, conv) 清单。
 pub fn RtRelay::sweep(
-  self : RtRelay, now : Int, ttl : Int
-) -> Array[(String, Int)] {
-  let stale : Array[(String, Int)] = []
+  self : RtRelay,
+  now : Int32,
+  ttl : Int32,
+) -> Array[(String, Int32)] {
+  let stale : Array[(String, Int32)] = []
   for topic, room in self.rooms {
     for conv, attendee in room {
       if itimediff_rel(now, attendee.last_seen) > ttl {
@@ -281,7 +294,7 @@ pub fn RtRelay::sweep(
       }
     }
   }
-  let evicted : Array[(String, Int)] = []
+  let evicted : Array[(String, Int32)] = []
   let mut i = 0
   while i < stale.length() {
     let (topic, conv) = stale[i]
@@ -289,7 +302,7 @@ pub fn RtRelay::sweep(
       Some(room) => {
         let _ = room.remove(conv)
         evicted.push((topic, conv))
-        let out : Array[(Int, String)] = []
+        let out : Array[(Int32, String)] = []
         self.broadcast_presence(topic, out)
       }
       None => ()
@@ -300,7 +313,7 @@ pub fn RtRelay::sweep(
 }
 
 ///|
-fn itimediff_rel(later : Int, earlier : Int) -> Int {
+fn itimediff_rel(later : Int32, earlier : Int32) -> Int32 {
   later - earlier
 }
 
@@ -319,7 +332,7 @@ pub fn frame_bytes(text : String) -> FixedArray[Byte] {
 
 ///|
 /// UTF-8 字节帧 → String(recv 侧;失配字节按 lossy 处理)。
-pub fn frame_text(buf : FixedArray[Byte], n : Int) -> String {
+pub fn frame_text(buf : FixedArray[Byte], n : Int32) -> String {
   let copy : FixedArray[Byte] = FixedArray::make(n, 0b0)
   if n > 0 {
     FixedArray::unsafe_blit(copy, 0, buf, 0, n)
@@ -329,7 +342,7 @@ pub fn frame_text(buf : FixedArray[Byte], n : Int) -> String {
 
 ///|
 /// 房内成员数(护栏读数;无房返回 0)。
-pub fn RtRelay::size(self : RtRelay, topic : String) -> Int {
+pub fn RtRelay::size(self : RtRelay, topic : String) -> Int32 {
   match self.rooms.get(topic) {
     Some(room) => room.length()
     None => 0

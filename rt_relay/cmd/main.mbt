@@ -15,7 +15,7 @@ async fn main {
   @async.with_task_group(_group => {
     while true {
       // 有界收一报(超时取消语义无损——UDP 报文在内核排队,不丢)
-      let got = try @async.with_timeout_opt(20, () => hub.recv_one()) catch {
+      let got = @async.with_timeout_opt(20, () => hub.recv_one()) catch {
         _ => None
       }
       if got is Some(n) {
@@ -51,9 +51,7 @@ async fn main {
       }
       // 向已退客户端端口的 sendto 会遭 ICMP refused 毒化 socket——
       // 泵的瞬态错误必须吞掉,否则中继主环崩死(全员失联)
-      let _ = try hub.pump_out(t) catch {
-        _ => []
-      }
+      let _ = hub.pump_out(t) catch { _ => [] }
       t = @async.now().to_int()
       let _ = @async.sleep(20)
     }

@@ -6,16 +6,16 @@
 // 参数与 ../bench_driver.c 逐项同构。
 
 ///|
-let chunk_len : Int = 1376 // mtu 1400 - 24 头 = mss,一段一消息
+let chunk_len : Int32 = 1376 // mtu 1400 - 24 头 = mss,一段一消息
 
 ///|
 let target_bytes : Int64 = 64L * 1024L * 1024L
 
 ///|
-let window_segs : Int = 512
+let window_segs : Int32 = 512
 
 ///|
-let max_rounds : Int = 100000
+let max_rounds : Int32 = 100000
 
 ///|
 fn main {
@@ -60,7 +60,9 @@ fn main {
   }
   let elapsed_ms : Int64 = @async.now() - start
   if elapsed_ms <= 0L {
-    println("KCPBENCH:MOONBIT pps=? mbps=? (elapsed too small: \{elapsed_ms}ms)")
+    println(
+      "KCPBENCH:MOONBIT pps=? mbps=? (elapsed too small: \{elapsed_ms}ms)",
+    )
     return
   }
   let pps : Int64 = segments * 1000L / elapsed_ms

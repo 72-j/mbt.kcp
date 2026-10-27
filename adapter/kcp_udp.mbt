@@ -8,14 +8,13 @@
 
 ///|
 /// UDP 载荷切片 → exact-size wire FixedArray(unsafe_blit 一道批拷)。
-fn bytes_of(buf : FixedArray[Byte], n : Int) -> FixedArray[Byte] {
+fn bytes_of(buf : FixedArray[Byte], n : Int32) -> FixedArray[Byte] {
   let wire : FixedArray[Byte] = FixedArray::make(n, 0b0)
   if n > 0 {
     FixedArray::unsafe_blit(wire, 0, buf, 0, n)
   }
   wire
 }
-
 
 ///|
 /// KCP 会话的 UDP 末端:session + client(A 侧)或 server(B 侧)。
@@ -29,8 +28,10 @@ pub struct KcpUdpPeer {
 ///|
 /// A 侧:connected UDP 客户端,指向 server_addr(recv 只认该对端)。
 pub async fn KcpUdpPeer::connect_client(
-  conv : Int, high_water : Int, server_addr : @socket.Addr
-) -> KcpUdpPeer raise {
+  conv : Int32,
+  high_water : Int32,
+  server_addr : @socket.Addr,
+) -> KcpUdpPeer {
   let client = @socket.UdpClient::UdpClient(server_addr)
   {
     session: @moonkcp.KcpSession::new(conv, high_water),
@@ -43,8 +44,9 @@ pub async fn KcpUdpPeer::connect_client(
 ///|
 /// B 侧:UDP 服务端,127.0.0.1:0 自分配;真身地址问 local_addr()。
 pub async fn KcpUdpPeer::listen_server(
-  conv : Int, high_water : Int
-) -> KcpUdpPeer raise {
+  conv : Int32,
+  high_water : Int32,
+) -> KcpUdpPeer {
   let server = @socket.UdpServer::UdpServer(@socket.Addr::parse("127.0.0.1:0"))
   {
     session: @moonkcp.KcpSession::new(conv, high_water),
@@ -58,23 +60,26 @@ pub async fn KcpUdpPeer::listen_server(
 /// 收件循环原语(后台收件任务专用):阻塞收一报,exact-size 切片推入
 /// 收件箱;B 侧顺带学对端地址。取消安全——收件箱无锁,主环只读不取消。
 pub async fn KcpUdpPeer::recv_into(
-  self : KcpUdpPeer, inbox : Array[FixedArray[Byte]]
+  self : KcpUdpPeer,
+  inbox : Array[FixedArray[Byte]],
 ) -> Unit {
   let buf : FixedArray[Byte] = FixedArray::make(2048, 0b0)
   // recv 错误吞掉续跑:已退客户端的 ICMP refused 会毒化 socket(下一发
   // recv 即抛)——不吞则后台收件任务静默死亡,中继永久失聪。
-  let n = try (match self.client {
-    Some(client) => client.recv(buf)
-    None =>
-      match self.server {
-        Some(server) => {
-          let (n, addr) = server.recvfrom(buf)
-          self.peer_addr = Some(addr)
-          n
+  let n = try {
+    match self.client {
+      Some(client) => client.recv(buf)
+      None =>
+        match self.server {
+          Some(server) => {
+            let (n, addr) = server.recvfrom(buf)
+            self.peer_addr = Some(addr)
+            n
+          }
+          None => 0
         }
-        None => 0
-      }
-  }) catch {
+    }
+  } catch {
     _ => 0
   }
   if n > 0 {
@@ -97,7 +102,7 @@ pub fn KcpUdpPeer::local_addr(self : KcpUdpPeer) -> @socket.Addr {
 
 ///|
 /// 出泵:tick 会话,出帧逐帧走 UDP 发出(Bytes 直发,零转换)。返回发出帧数。
-pub async fn KcpUdpPeer::pump_out(self : KcpUdpPeer, current : Int) -> Int raise {
+pub async fn KcpUdpPeer::pump_out(self : KcpUdpPeer, current : Int32) -> Int32 {
   let frames = self.session.tick(current)
   let mut sent = 0
   for frame in frames {
@@ -121,7 +126,7 @@ pub async fn KcpUdpPeer::pump_out(self : KcpUdpPeer, current : Int) -> Int raise
 
 ///|
 /// 收一报(阻塞至达):喂会话;B 侧顺带学对端地址。返回读得字节数。
-pub async fn KcpUdpPeer::recv_one(self : KcpUdpPeer) -> Int raise {
+pub async fn KcpUdpPeer::recv_one(self : KcpUdpPeer) -> Int32 {
   let buf : FixedArray[Byte] = FixedArray::make(2048, 0b0)
   match self.client {
     Some(client) => {
@@ -148,7 +153,10 @@ pub async fn KcpUdpPeer::recv_one(self : KcpUdpPeer) -> Int raise {
 
 ///|
 /// 应用下发一消息(背压语义同会话壳)。
-pub fn KcpUdpPeer::send_message(self : KcpUdpPeer, payload : FixedArray[Byte]) -> Int {
+pub fn KcpUdpPeer::send_message(
+  self : KcpUdpPeer,
+  payload : FixedArray[Byte],
+) -> Int32 {
   self.session.send_message(payload)
 }
 
@@ -165,12 +173,15 @@ pub fn KcpUdpPeer::poll_message(self : KcpUdpPeer) -> FixedArray[Byte]? {
 pub struct KcpUdpHub {
   server : @moonkcp.KcpServer
   priv udp : @socket.UdpServer
-  priv addrs : Map[Int, @socket.Addr]
+  priv addrs : Map[Int32, @socket.Addr]
 }
 
 ///|
 /// 监听 127.0.0.1:0 自分配;真身地址问 local_addr()。
-pub async fn KcpUdpHub::listen(high_water : Int, max_sessions : Int) -> KcpUdpHub raise {
+pub async fn KcpUdpHub::listen(
+  high_water : Int32,
+  max_sessions : Int32,
+) -> KcpUdpHub {
   let udp = @socket.UdpServer::UdpServer(@socket.Addr::parse("127.0.0.1:0"))
   {
     server: @moonkcp.KcpServer::new(high_water, max_sessions),
@@ -188,11 +199,14 @@ pub fn KcpUdpHub::local_addr(self : KcpUdpHub) -> @socket.Addr {
 ///|
 /// 收一报(阻塞至达):recvfrom 学 conv→Addr,路由进分离器。
 /// 返回 input 错码(0/-1/-2/-3/-4,含义同 KcpServer::on_datagram)。
-pub async fn KcpUdpHub::recv_one(self : KcpUdpHub) -> Int raise {
+pub async fn KcpUdpHub::recv_one(self : KcpUdpHub) -> Int32 {
   let buf : FixedArray[Byte] = FixedArray::make(2048, 0b0)
   let (n, addr) = self.udp.recvfrom(buf)
   if n >= 4 {
-    let conv = buf[0].to_int() | (buf[1].to_int() << 8) | (buf[2].to_int() << 16) | (buf[3].to_int() << 24)
+    let conv = buf[0].to_int() |
+      (buf[1].to_int() << 8) |
+      (buf[2].to_int() << 16) |
+      (buf[3].to_int() << 24)
     self.addrs[conv] = addr
   }
   self.server.on_datagram(bytes_of(buf, n))
@@ -202,10 +216,11 @@ pub async fn KcpUdpHub::recv_one(self : KcpUdpHub) -> Int raise {
 /// 出泵:分离器 tick,出帧按 conv 查地址 sendto。
 /// 返回逐会话帧数 [(conv, n_frames)]——宿主/测试据此定向收包。
 pub async fn KcpUdpHub::pump_out(
-  self : KcpUdpHub, current : Int
-) -> Array[(Int, Int)] raise {
+  self : KcpUdpHub,
+  current : Int32,
+) -> Array[(Int32, Int32)] {
   let tagged = self.server.tick(current)
-  let per_conv : Array[(Int, Int)] = []
+  let per_conv : Array[(Int32, Int32)] = []
   for entry in tagged {
     let (conv, frame) = entry
     match self.addrs.get(conv) {
@@ -233,8 +248,10 @@ pub async fn KcpUdpHub::pump_out(
 ///|
 /// 对指定会话发消息(背压语义同会话壳;无会话 -1)。
 pub fn KcpUdpHub::send_message_to(
-  self : KcpUdpHub, conv : Int, payload : FixedArray[Byte]
-) -> Int {
+  self : KcpUdpHub,
+  conv : Int32,
+  payload : FixedArray[Byte],
+) -> Int32 {
   match self.server.session_of(conv) {
     Some(session) => session.send_message(payload)
     None => -1
@@ -243,7 +260,10 @@ pub fn KcpUdpHub::send_message_to(
 
 ///|
 /// 收指定会话一消息(FIFO;无会话/无消息 None)。
-pub fn KcpUdpHub::poll_message(self : KcpUdpHub, conv : Int) -> FixedArray[Byte]? {
+pub fn KcpUdpHub::poll_message(
+  self : KcpUdpHub,
+  conv : Int32,
+) -> FixedArray[Byte]? {
   match self.server.session_of(conv) {
     Some(session) => session.poll_message()
     None => None
@@ -252,15 +272,17 @@ pub fn KcpUdpHub::poll_message(self : KcpUdpHub, conv : Int) -> FixedArray[Byte]
 
 ///|
 /// 在册 conv 清单。
-pub fn KcpUdpHub::convs(self : KcpUdpHub) -> Array[Int] {
+pub fn KcpUdpHub::convs(self : KcpUdpHub) -> Array[Int32] {
   self.server.convs()
 }
 
 ///|
 /// 闲置清扫:会话与地址表同拍清,返回被逐 conv 清单。
 pub fn KcpUdpHub::sweep(
-  self : KcpUdpHub, current : Int, idle_timeout : Int
-) -> Array[Int] {
+  self : KcpUdpHub,
+  current : Int32,
+  idle_timeout : Int32,
+) -> Array[Int32] {
   let evicted = self.server.sweep(current, idle_timeout)
   let mut i = 0
   while i < evicted.length() {
@@ -274,12 +296,16 @@ pub fn KcpUdpHub::sweep(
 /// 收件循环原语(服务端组合宿主版):阻塞收报 + conv→地址自学习,
 /// exact-size 切片推入收件箱。取消安全同 peer 版。
 pub async fn KcpUdpHub::recv_into(
-  self : KcpUdpHub, inbox : Array[FixedArray[Byte]]
+  self : KcpUdpHub,
+  inbox : Array[FixedArray[Byte]],
 ) -> Unit {
   let buf : FixedArray[Byte] = FixedArray::make(2048, 0b0)
   let (n, addr) = self.udp.recvfrom(buf)
   if n >= 4 {
-    let conv = buf[0].to_int() | (buf[1].to_int() << 8) | (buf[2].to_int() << 16) | (buf[3].to_int() << 24)
+    let conv = buf[0].to_int() |
+      (buf[1].to_int() << 8) |
+      (buf[2].to_int() << 16) |
+      (buf[3].to_int() << 24)
     self.addrs[conv] = addr
   }
   if n > 0 {

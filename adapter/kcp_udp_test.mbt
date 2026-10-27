@@ -2,7 +2,7 @@
 // 协议时序仍注入快钟——确定性不破)
 
 ///|
-fn mk_payload(tag : Int, len : Int) -> FixedArray[Byte] {
+fn mk_payload(tag : Int32, len : Int32) -> FixedArray[Byte] {
   FixedArray::makei(len, fn(i) { ((tag + i) % 128).to_byte() })
 }
 
@@ -19,7 +19,10 @@ fn assert_fa_eq(a : FixedArray[Byte], b : FixedArray[Byte]) -> Unit raise {
 
 ///|
 /// 消息 Option 断言:Some 且逐元素等。
-fn assert_msg(opt : FixedArray[Byte]?, payload : FixedArray[Byte]) -> Unit raise {
+fn assert_msg(
+  opt : FixedArray[Byte]?,
+  payload : FixedArray[Byte],
+) -> Unit raise {
   match opt {
     Some(msg) => assert_fa_eq(msg, payload)
     None => abort("expected message, got None")
