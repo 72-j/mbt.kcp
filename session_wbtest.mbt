@@ -153,3 +153,18 @@ test "session reports link death" {
   }
   assert_true(a.is_dead())
 }
+
+///|
+/// K10 边界面:背压水位——high_water = 0 即全拒(waitsnd 0 >= 0);
+/// high_water = 1 钉阈值语义:第 1 条入队(waitsnd 1),第 2 条
+/// waitsnd 1 >= 1 拒收。waitsnd = snd_queue + snd_buf。
+test "high_water boundary: 0 rejects all, 1 admits exactly one" {
+  let zero = mk_session(7, 0)
+  assert_eq(zero.send_message(mk_payload(1, 8)), -2)
+  assert_eq(zero.kcp.waitsnd(), 0)
+  let one = mk_session(7, 1)
+  assert_eq(one.send_message(mk_payload(2, 8)), 8)
+  assert_eq(one.kcp.waitsnd(), 1)
+  assert_eq(one.send_message(mk_payload(3, 8)), -2)
+  assert_eq(one.kcp.waitsnd(), 1)
+}

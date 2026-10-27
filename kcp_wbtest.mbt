@@ -531,3 +531,70 @@ fn assert_msg(
     None => abort("expected message, got None")
   }
 }
+
+///|
+/// K10 边界面:mtu 下限 50(低于 50 或低于头长拒设,原值不动);
+/// 上界无钳——mss = mtu - 24 随动。
+test "set_mtu lower bound 50, mss arithmetic follows" {
+  let kcp = Kcp::create(7)
+  assert_eq(kcp.set_mtu(49), -1)
+  assert_eq(kcp.mtu, 1400)
+  assert_eq(kcp.mss, 1376)
+  assert_eq(kcp.set_mtu(50), 0)
+  assert_eq(kcp.mtu, 50)
+  assert_eq(kcp.mss, 26)
+  assert_eq(kcp.set_mtu(1400), 0)
+  assert_eq(kcp.mss, 1376)
+}
+
+///|
+/// K10 边界面:窗配置——0 = 该项不动;rcv_wnd 下限钳 128(永不低于
+/// WND_RCV,差分门逮出的直译偏差钉死);snd_wnd 无钳直设。
+test "set_wnd zero untouched, rcv clamped to 128, snd verbatim" {
+  let kcp = Kcp::create(7)
+  assert_eq(kcp.snd_wnd, 32)
+  assert_eq(kcp.rcv_wnd, 128)
+  kcp.set_wnd(0, 0)
+  assert_eq(kcp.snd_wnd, 32)
+  assert_eq(kcp.rcv_wnd, 128)
+  kcp.set_wnd(0, 1)
+  assert_eq(kcp.rcv_wnd, 128)
+  kcp.set_wnd(0, 200)
+  assert_eq(kcp.rcv_wnd, 200)
+  kcp.set_wnd(16, 0)
+  assert_eq(kcp.snd_wnd, 16)
+}
+
+///|
+/// K10 边界面:0 长载荷——count 归 1,空段照排;对端整消息收出
+/// 空载荷。无损泵 20 拍内 ACK 收尾(waitsnd 归零)。
+test "zero-length payload round-trips as empty message" {
+  let a = mk_fast(7)
+  let b = mk_fast(7)
+  let empty : FixedArray[Byte] = FixedArray::make(0, 0b0)
+  assert_eq(a.send(empty), 0)
+  assert_eq(a.waitsnd(), 1)
+  pump_clean(a, b, 0, 20)
+  assert_eq(a.waitsnd(), 0)
+  match b.recv() {
+    Some(msg) => assert_eq(msg.length(), 0)
+    None => fail("0 长载荷未达对端")
+  }
+}
+
+///|
+/// K10 边界面:分片上限 = WND_RCV(128)——count >= 128 拒收 -2,
+/// 127 片恰可入队(边界两侧各一枚,mss 1376 缺省)。
+test "fragment count limit at WND_RCV: 127 ok, 128 rejected" {
+  let kcp = Kcp::create(7)
+  let mss = kcp.mss
+  let ok_len = 127 * mss
+  let ok = FixedArray::make(ok_len, (0).to_byte())
+  assert_eq(kcp.send(ok), ok_len)
+  assert_eq(kcp.waitsnd(), 127)
+  let kcp2 = Kcp::create(7)
+  let over_len = 127 * mss + 1
+  let over = FixedArray::make(over_len, (0).to_byte())
+  assert_eq(kcp2.send(over), -2)
+  assert_eq(kcp2.waitsnd(), 0)
+}
