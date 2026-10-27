@@ -1,0 +1,61 @@
+# fec_dialect.toml — FEC 线格式词表(K8 刀3;持久合同,同 kcp_dialect.toml 律:
+# 新键可选缺省、未知键忽略、删键/改义同笔迁移)
+
+[module]
+name = "moonkcp"
+
+[fec]
+header_size = 12
+byte_order = "big"
+codec_default = "rs-cauchy"
+
+[[fec.field]]
+name = "group_id"
+offset = 0
+size = 4
+type = "u32"
+
+[[fec.field]]
+name = "shard_index"
+offset = 4
+size = 1
+type = "u8"
+
+[[fec.field]]
+name = "k"
+offset = 5
+size = 1
+type = "u8"
+
+[[fec.field]]
+name = "m"
+offset = 6
+size = 1
+type = "u8"
+
+[[fec.field]]
+name = "shard_total"
+offset = 7
+size = 1
+type = "u8"
+
+[[fec.field]]
+name = "payload_len"
+offset = 8
+size = 2
+type = "u16"
+
+[[fec.field]]
+name = "reserved"
+offset = 10
+size = 2
+type = "u16"
+
+# 体长前缀住受保护域(RS 可整片重建):恢复重建的整片含体,12B 头不可
+# 重建,故载荷长双写——头 payload_len 是体内 body_len 的镜像,直通快径
+# 读头,恢复径只认体内。
+[[fec.body]]
+name = "body_len"
+offset = 0
+size = 2
+type = "u16"

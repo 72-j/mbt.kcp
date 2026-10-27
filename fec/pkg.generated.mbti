@@ -2,6 +2,8 @@
 package "thy1016/moonkcp/fec"
 
 // Values
+pub const FEC_HEADER_SIZE : Int32 = 12
+
 pub const GF_POLY : Int32 = 0x11D
 
 pub fn gf_div(Int32, Int32) -> Int32
@@ -15,6 +17,54 @@ pub fn gf_mul_shift_add(Int32, Int32) -> Int32
 // Errors
 
 // Types and methods
+pub struct FecRx {
+  depth : Int32
+  codec_factory : (Int32, Int32) -> &MdsCodec
+  groups : Map[Int32, RxGroup]
+  order : Array[Int32]
+  mut frames_in : Int32
+  mut delivered : Int32
+  mut recovered_shards : Int32
+  mut recovered_groups : Int32
+  mut dropped_malformed : Int32
+  mut dropped_late : Int32
+  mut groups_lost : Int32
+}
+pub fn FecRx::feed(Self, FixedArray[Byte]) -> Array[FixedArray[Byte]]
+pub fn FecRx::new(Int32) -> Self
+pub fn FecRx::stats(Self) -> FecRxStats
+pub fn FecRx::with_codec((Int32, Int32) -> &MdsCodec, Int32) -> Self
+
+pub struct FecRxStats {
+  frames_in : Int32
+  delivered : Int32
+  recovered_shards : Int32
+  recovered_groups : Int32
+  dropped_malformed : Int32
+  dropped_late : Int32
+  groups_lost : Int32
+}
+
+pub struct FecTx {
+  k : Int32
+  m : Int32
+  capacity : Int32
+  codec : &MdsCodec
+  mut group_id : Int32
+  mut slots : Array[FixedArray[Byte]]
+  mut closed_groups : Int32
+  mut frames_out : Int32
+}
+pub fn FecTx::feed(Self, FixedArray[Byte]) -> Array[FixedArray[Byte]]
+pub fn FecTx::new(Int32, Int32, Int32) -> Self
+pub fn FecTx::stats(Self) -> FecTxStats
+pub fn FecTx::with_codec(&MdsCodec, Int32, Int32, Int32) -> Self
+
+pub struct FecTxStats {
+  closed_groups : Int32
+  frames_out : Int32
+}
+
 pub struct RsCodec {
   k : Int32
   m : Int32
@@ -24,6 +74,12 @@ pub fn RsCodec::encode_parity(Self, Array[FixedArray[Byte]]) -> Array[FixedArray
 pub fn RsCodec::new(Int32, Int32) -> Self
 pub fn RsCodec::recover(Self, Array[FixedArray[Byte]?]) -> Array[FixedArray[Byte]]?
 
+type RxGroup
+
 // Type aliases
 
 // Traits
+pub(open) trait MdsCodec {
+  fn encode_parity(Self, Array[FixedArray[Byte]]) -> Array[FixedArray[Byte]]
+  fn recover(Self, Array[FixedArray[Byte]?]) -> Array[FixedArray[Byte]]?
+}
