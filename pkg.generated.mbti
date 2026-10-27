@@ -1,168 +1,188 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "thy1016/moonkcp"
 
+import {
+  "thy1016/moonkcp/fec",
+}
+
 // Values
-pub const ASK_SEND : Int = 1
+pub const ASK_SEND : Int32 = 1
 
-pub const ASK_TELL : Int = 2
+pub const ASK_TELL : Int32 = 2
 
-pub const CMD_ACK : Int = 82
+pub const CMD_ACK : Int32 = 82
 
-pub const CMD_PUSH : Int = 81
+pub const CMD_PUSH : Int32 = 81
 
-pub const CMD_WASK : Int = 83
+pub const CMD_WASK : Int32 = 83
 
-pub const CMD_WINS : Int = 84
+pub const CMD_WINS : Int32 = 84
 
-pub const DEADLINK : Int = 20
+pub const DEADLINK : Int32 = 20
 
-pub const FASTACK_LIMIT : Int = 5
+pub const FASTACK_LIMIT : Int32 = 5
 
-pub const HEADER_SIZE : Int = 24
+pub const HEADER_SIZE : Int32 = 24
 
-pub const INTERVAL_DEF : Int = 100
+pub const INTERVAL_DEF : Int32 = 100
 
-pub const MTU_DEF : Int = 1400
+pub const MTU_DEF : Int32 = 1400
 
-pub const PROBE_INIT : Int = 5000
+pub const PROBE_INIT : Int32 = 5000
 
-pub const PROBE_LIMIT : Int = 120000
+pub const PROBE_LIMIT : Int32 = 120000
 
-pub const RTO_DEF : Int = 200
+pub const RTO_DEF : Int32 = 200
 
-pub const RTO_MAX : Int = 60000
+pub const RTO_MAX : Int32 = 60000
 
-pub const RTO_MIN : Int = 100
+pub const RTO_MIN : Int32 = 100
 
-pub const RTO_NDL : Int = 30
+pub const RTO_NDL : Int32 = 30
 
-pub const THRESH_INIT : Int = 2
+pub const THRESH_INIT : Int32 = 2
 
-pub const THRESH_MIN : Int = 2
+pub const THRESH_MIN : Int32 = 2
 
-pub const WND_RCV : Int = 128
+pub const WND_RCV : Int32 = 128
 
-pub const WND_SND : Int = 32
+pub const WND_SND : Int32 = 32
 
-pub fn decode_segment(FixedArray[Byte], Int) -> (KcpSegment, Int)?
+pub fn decode_segment(FixedArray[Byte], Int32) -> (KcpSegment, Int32)?
 
 pub fn encode_segment(KcpSegment) -> FixedArray[Byte]
 
 // Errors
 
 // Types and methods
+pub struct FecSession {
+  session : KcpSession
+  tx : @fec.FecTx
+  rx : @fec.FecRx
+}
+pub fn FecSession::fec_rx_stats(Self) -> @fec.FecRxStats
+pub fn FecSession::fec_tx_stats(Self) -> @fec.FecTxStats
+pub fn FecSession::is_dead(Self) -> Bool
+pub fn FecSession::last_active(Self) -> Int32
+pub fn FecSession::new(Int32, Int32, Int32, Int32) -> Self
+pub fn FecSession::on_datagram(Self, FixedArray[Byte]) -> Int32
+pub fn FecSession::poll_message(Self) -> FixedArray[Byte]?
+pub fn FecSession::send_message(Self, FixedArray[Byte]) -> Int32
+pub fn FecSession::stats(Self) -> KcpStats
+pub fn FecSession::tick(Self, Int32) -> Array[FixedArray[Byte]]
+
 pub(all) struct Kcp {
-  conv : Int
-  mut mtu : Int
-  mut mss : Int
-  mut snd_wnd : Int
-  mut rcv_wnd : Int
-  mut nodelay : Int
-  mut interval : Int
-  mut fastresend : Int
-  mut fastlimit : Int
-  mut nocwnd : Int
-  mut dead_link : Int
-  mut current : Int
-  mut updated : Int
-  mut ts_flush : Int
-  mut snd_una : Int
-  mut snd_nxt : Int
-  mut rcv_nxt : Int
-  mut ts_probe : Int
-  mut probe_wait : Int
-  mut probe : Int
-  mut rmt_wnd : Int
-  mut cwnd : Int
-  mut incr : Int
-  mut ssthresh : Int
-  mut rx_srtt : Int
-  mut rx_rttval : Int
-  mut rx_rto : Int
-  mut min_rto : Int
-  mut state : Int
-  mut xmit_total : Int
-  mut rcv_accepted : Int
-  mut last_active : Int
+  conv : Int32
+  mut mtu : Int32
+  mut mss : Int32
+  mut snd_wnd : Int32
+  mut rcv_wnd : Int32
+  mut nodelay : Int32
+  mut interval : Int32
+  mut fastresend : Int32
+  mut fastlimit : Int32
+  mut nocwnd : Int32
+  mut dead_link : Int32
+  mut current : Int32
+  mut updated : Int32
+  mut ts_flush : Int32
+  mut snd_una : Int32
+  mut snd_nxt : Int32
+  mut rcv_nxt : Int32
+  mut ts_probe : Int32
+  mut probe_wait : Int32
+  mut probe : Int32
+  mut rmt_wnd : Int32
+  mut cwnd : Int32
+  mut incr : Int32
+  mut ssthresh : Int32
+  mut rx_srtt : Int32
+  mut rx_rttval : Int32
+  mut rx_rto : Int32
+  mut min_rto : Int32
+  mut state : Int32
+  mut xmit_total : Int32
+  mut rcv_accepted : Int32
+  mut last_active : Int32
   snd_queue : Array[KcpSegment]
   snd_buf : Array[KcpSegment]
   rcv_buf : Array[KcpSegment]
   rcv_queue : Array[KcpSegment]
-  mut acklist : Array[(Int, Int)]
+  mut acklist : Array[(Int32, Int32)]
 }
-pub fn Kcp::check(Self, Int) -> Int
-pub fn Kcp::create(Int) -> Self
+pub fn Kcp::check(Self, Int32) -> Int32
+pub fn Kcp::create(Int32) -> Self
 pub fn Kcp::flush_frames(Self) -> Array[FixedArray[Byte]]
-pub fn Kcp::input(Self, FixedArray[Byte]) -> Int
-pub fn Kcp::peeksize(Self) -> Int
+pub fn Kcp::input(Self, FixedArray[Byte]) -> Int32
+pub fn Kcp::peeksize(Self) -> Int32
 pub fn Kcp::recv(Self) -> FixedArray[Byte]?
-pub fn Kcp::send(Self, FixedArray[Byte]) -> Int
-pub fn Kcp::set_mtu(Self, Int) -> Int
-pub fn Kcp::set_nodelay(Self, Int, Int, Int, Int) -> Unit
-pub fn Kcp::set_wnd(Self, Int, Int) -> Unit
+pub fn Kcp::send(Self, FixedArray[Byte]) -> Int32
+pub fn Kcp::set_mtu(Self, Int32) -> Int32
+pub fn Kcp::set_nodelay(Self, Int32, Int32, Int32, Int32) -> Unit
+pub fn Kcp::set_wnd(Self, Int32, Int32) -> Unit
 pub fn Kcp::stats(Self) -> KcpStats
-pub fn Kcp::update(Self, Int) -> Array[FixedArray[Byte]]
-pub fn Kcp::waitsnd(Self) -> Int
+pub fn Kcp::update(Self, Int32) -> Array[FixedArray[Byte]]
+pub fn Kcp::waitsnd(Self) -> Int32
 
 pub(all) struct KcpSegment {
-  mut conv : Int
-  mut cmd : Int
-  mut frg : Int
-  mut wnd : Int
-  mut ts : Int
-  mut sn : Int
-  mut una : Int
-  mut len : Int
+  mut conv : Int32
+  mut cmd : Int32
+  mut frg : Int32
+  mut wnd : Int32
+  mut ts : Int32
+  mut sn : Int32
+  mut una : Int32
+  mut len : Int32
   mut data : FixedArray[Byte]
-  mut xmit : Int
-  mut fastack : Int
-  mut resendts : Int
-  mut rto : Int
+  mut xmit : Int32
+  mut fastack : Int32
+  mut resendts : Int32
+  mut rto : Int32
 }
 
 pub(all) struct KcpServer {
-  sessions : Map[Int, KcpSession]
-  high_water : Int
-  max_sessions : Int
+  sessions : Map[Int32, KcpSession]
+  high_water : Int32
+  max_sessions : Int32
 }
-pub fn KcpServer::convs(Self) -> Array[Int]
-pub fn KcpServer::get_or_create(Self, Int) -> KcpSession?
-pub fn KcpServer::new(Int, Int) -> Self
-pub fn KcpServer::on_datagram(Self, FixedArray[Byte]) -> Int
-pub fn KcpServer::remove(Self, Int) -> Unit
-pub fn KcpServer::session_of(Self, Int) -> KcpSession?
-pub fn KcpServer::size(Self) -> Int
-pub fn KcpServer::sweep(Self, Int, Int) -> Array[Int]
-pub fn KcpServer::tick(Self, Int) -> Array[(Int, FixedArray[Byte])]
+pub fn KcpServer::convs(Self) -> Array[Int32]
+pub fn KcpServer::get_or_create(Self, Int32) -> KcpSession?
+pub fn KcpServer::new(Int32, Int32) -> Self
+pub fn KcpServer::on_datagram(Self, FixedArray[Byte]) -> Int32
+pub fn KcpServer::remove(Self, Int32) -> Unit
+pub fn KcpServer::session_of(Self, Int32) -> KcpSession?
+pub fn KcpServer::size(Self) -> Int32
+pub fn KcpServer::sweep(Self, Int32, Int32) -> Array[Int32]
+pub fn KcpServer::tick(Self, Int32) -> Array[(Int32, FixedArray[Byte])]
 
 pub(all) struct KcpSession {
   kcp : Kcp
   inbound : Array[FixedArray[Byte]]
-  high_water : Int
+  high_water : Int32
 }
 pub fn KcpSession::is_dead(Self) -> Bool
-pub fn KcpSession::last_active(Self) -> Int
-pub fn KcpSession::new(Int, Int) -> Self
-pub fn KcpSession::on_datagram(Self, FixedArray[Byte]) -> Int
+pub fn KcpSession::last_active(Self) -> Int32
+pub fn KcpSession::new(Int32, Int32) -> Self
+pub fn KcpSession::on_datagram(Self, FixedArray[Byte]) -> Int32
 pub fn KcpSession::poll_message(Self) -> FixedArray[Byte]?
-pub fn KcpSession::send_message(Self, FixedArray[Byte]) -> Int
+pub fn KcpSession::send_message(Self, FixedArray[Byte]) -> Int32
 pub fn KcpSession::stats(Self) -> KcpStats
-pub fn KcpSession::tick(Self, Int) -> Array[FixedArray[Byte]]
+pub fn KcpSession::tick(Self, Int32) -> Array[FixedArray[Byte]]
 
 pub(all) struct KcpStats {
-  srtt : Int
-  rttval : Int
-  rto : Int
-  cwnd : Int
-  snd_wnd : Int
-  rmt_wnd : Int
-  in_flight : Int
-  queued : Int
-  rto_retransmits : Int
-  rcv_accepted : Int
-  rcv_queue_len : Int
-  rcv_buf_len : Int
-  last_active : Int
+  srtt : Int32
+  rttval : Int32
+  rto : Int32
+  cwnd : Int32
+  snd_wnd : Int32
+  rmt_wnd : Int32
+  in_flight : Int32
+  queued : Int32
+  rto_retransmits : Int32
+  rcv_accepted : Int32
+  rcv_queue_len : Int32
+  rcv_buf_len : Int32
+  last_active : Int32
 }
 
 // Type aliases
