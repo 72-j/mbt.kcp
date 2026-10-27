@@ -64,7 +64,7 @@ pub fn FecSession::fec_rx_stats(Self) -> @fec.FecRxStats
 pub fn FecSession::fec_tx_stats(Self) -> @fec.FecTxStats
 pub fn FecSession::is_dead(Self) -> Bool
 pub fn FecSession::last_active(Self) -> Int32
-pub fn FecSession::new(Int32, Int32, Int32, Int32) -> Self
+pub fn FecSession::new(conv~ : Int32, high_water~ : Int32, k~ : Int32, m~ : Int32) -> Self
 pub fn FecSession::on_datagram(Self, FixedArray[Byte]) -> Int32
 pub fn FecSession::poll_message(Self) -> FixedArray[Byte]?
 pub fn FecSession::send_message(Self, FixedArray[Byte]) -> Int32

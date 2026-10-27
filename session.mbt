@@ -56,7 +56,8 @@ pub fn KcpSession::on_datagram(
 
 ///|
 /// 宿主时钟推进:到 interval 点则 flush,返回待发送帧
-/// (宿主逐帧走 UDP 发出)。
+/// (宿主逐帧走 UDP 发出)。= Kcp::update / ikcp_update 面——
+/// 引擎层保 C 正典拼写,会话层用宿主驱动词汇,两层各伺其职。
 pub fn KcpSession::tick(
   self : KcpSession,
   current : Int32,

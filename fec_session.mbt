@@ -23,10 +23,10 @@ pub struct FecSession {
 /// 新会话:conv 双端一致;high_water = 背压水位;k/m 组形;
 /// 恢复窗深缺省 8 组。片容量按 KCP 当前 mtu 推导。
 pub fn FecSession::new(
-  conv : Int32,
-  high_water : Int32,
-  k : Int32,
-  m : Int32,
+  conv~ : Int32,
+  high_water~ : Int32,
+  k~ : Int32,
+  m~ : Int32,
 ) -> FecSession {
   let session = KcpSession::new(conv, high_water)
   let capacity = session.kcp.mtu + @fec.FEC_HEADER_SIZE + 2

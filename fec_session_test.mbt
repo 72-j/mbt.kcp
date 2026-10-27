@@ -46,8 +46,12 @@ fn bytes_equal(a : FixedArray[Byte], b : FixedArray[Byte]) -> Bool {
 
 ///|
 test "带损集成门 FEC 开:强丢组内一数据帧,当场恢复全交付 ≤ 8 拍" {
-  let a = @moonkcp.FecSession::new(7, 128, 3, 2)
-  let b = @moonkcp.FecSession::new(7, 128, 3, 2)
+  let conv = 7
+  let high_water = 128
+  let k = 3
+  let m = 2
+  let a = @moonkcp.FecSession::new(conv~, high_water~, k~, m~)
+  let b = @moonkcp.FecSession::new(conv~, high_water~, k~, m~)
   a.session.kcp.interval = 10
   b.session.kcp.interval = 10
   let rng : Array[Int32] = [20261027]
@@ -149,8 +153,12 @@ test "带损集成门 FEC 关:同位帧丢,缺片等 RTO ≥ 15 拍,队头阻塞
 
 ///|
 test "带损集成门 LCG 20% 帧损:FEC 开 30 消息全交付" {
-  let a = @moonkcp.FecSession::new(9, 128, 3, 2)
-  let b = @moonkcp.FecSession::new(9, 128, 3, 2)
+  let conv = 9
+  let high_water = 128
+  let k = 3
+  let m = 2
+  let a = @moonkcp.FecSession::new(conv~, high_water~, k~, m~)
+  let b = @moonkcp.FecSession::new(conv~, high_water~, k~, m~)
   a.session.kcp.interval = 10
   b.session.kcp.interval = 10
   let rng : Array[Int32] = [424242]
