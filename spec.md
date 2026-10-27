@@ -35,6 +35,8 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | D-FEC8 | 缝 = 参数不是包:`open_group(k~, m~)` 逐组实参 + 宿主侧 `FecPolicy::decide(signals) -> Profile` 端口 | fec/ 纯包永不知「自适应」存在;最薄的缝 |
 | D-FEC9 | 大gen 只吃策略词表(档位/阈值/滞回),FEC 数学内核不入 gen 链 | 内核的门 = 财产门;为 gen 而 gen 禁 |
 | D-FEC10 | moonkcp 永不 import moonbole;合同 = Profile + 权重文件 + 策略 TOML 三件;策略/学习输出过钳制(k∈[1,kmax], m∈[0,mmax])才上组 | 依赖方向钉死(fixd 同款合同);护栏住端口包装层不住模型 |
+| D-FEC11 | FEC 层六边形分层:`MdsCodec` 端口注入(RS = 缺省适配器,数学内核住端口外侧),线格式住 frame 适配器,FecTx/FecRx 纯机器零 IO | 换码 = 换适配器,层机器零改动;效应具名,K9 策略机可拾 |
+| D-FEC12 | FEC 线格式词表 = `domain/fec_dialect.toml` 持久合同(kcp_dialect.toml 同律);载荷长双写——头 payload_len 镜像体内 body_len,直通读头、恢复径只认体内 | 12B 头随帧盖戳不可重建,片体随片重建——单一真相在受保护域;镜像一致性有门钉 |
 
 ## 3. 役账
 
@@ -47,7 +49,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | K5 | C 差分对拍(`workspace/` 驱动对 + diff_gate.mjs) | 帧转录逐字节等 + 收敛讫数 | **完成**(KCPDIFF:PASS,20%/33% 丢失全同) |
 | K6 | KcpServer conv 分离器 | 双 conv 不串线/自动建+护栏+收尸轮回/跨会话碎片合并 | **完成**(26/26 绿,2026-10-25) |
 | K7 | KcpUdpHub 组合宿主 | 真 UDP 双客户端不串线/回程/洪泛/清扫/重建 5/5 | **完成**(28/28+5/5 绿,2026-10-25) |
-| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **开工**(刀1 GF 内核,2026-10-27) |
+| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **进行中**(刀1-3 讫 14/14 绿;刀4 接线候战,2026-10-27) |
 
 ## 4. KCP 协议线格式(24B 头 + data)
 
