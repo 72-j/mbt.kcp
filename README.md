@@ -17,6 +17,9 @@ ARQ 传输库。协议核心为零 IO、零时钟的纯状态机，毫秒由调�
 - UDP 适配器：`KcpUdpPeer`（双端直连）与 `KcpUdpHub`（单 socket 多会话
   组合宿主）。
 - 观测面 `Kcp::stats`：RTT、RTO、拥塞窗、队列读数、接收守恒账。
+- FEC 前向纠错层 `fec/`（可选）：Reed-Solomon 系统码（GF(2^8)、Cauchy 阵
+  MDS），组内 ≤m 丢失当场恢复不等重传；`MdsCodec` 端口可换编码器，
+  `FecSession` 组合壳一键接入。
 - 差分对拍：与 C 参照在确定性丢包、乱序、停摆场景下帧转录逐字节一致。
 
 ## 安装
@@ -70,6 +73,33 @@ let peer = @adapter.KcpUdpPeer::connect_client(7, 128, hub.local_addr())
 
 可运行示例见 `examples/`（echo 服务端与对打客户端）。
 
+### FEC 前向纠错（可选层）
+
+`FecSession` 组合 `KcpSession` 与 FEC 发/收机，应用面 API 一一透传；
+FEC 关闭 = 直接用 `KcpSession`（核零沾）：
+
+```moonbit
+let session = @moonkcp.FecSession::new(1, 128, 3, 2) // conv, 背压水位, k, m
+let n = session.send_message(payload)
+let wire = session.tick(now_ms)        // 组满同突发附带冗余帧
+let code = session.on_datagram(frame)  // 线帧进;恢复对应用透明
+match session.poll_message() {
+  Some(msg) => // 整消息
+  None => ()
+}
+```
+
+- 线格式：12B 自描述头（group_id / shard_index / k / m / payload_len），
+  逐组参数由发侧单边拍板、收侧零协商（合同 = `domain/fec_dialect.toml`）。
+- 语义：数据帧即刻透传（零排队延时）；组齐 k 片当场恢复补投；尾组不满
+  k 不闭组，>m 丢失回落 ARQ 兜底。
+- 开销：带宽冗余 m/(k+m)——(3,2) 为 40%，(10,3) 为 23%；CPU 读数
+  `moon run workspace/fec_bench --release`（RS(10,3)/1200B 片：编码
+  ~100 MB/s、最坏恢复 ~45 MB/s、层直通 ~9 MB/s，百 KB/s 量级视频流
+  占 CPU 不足 1%）。
+- 六边形：`MdsCodec` 端口注入，RS 仅为缺省适配器；编解码器工厂逐组
+  实例化（k/m 随帧头自描述），换码 = 换适配器，层机器零改动。
+
 ## API 总览
 
 | 入口 | 作用 |
@@ -82,6 +112,8 @@ let peer = @adapter.KcpUdpPeer::connect_client(7, 128, hub.local_addr())
 | `KcpServer::on_datagram` / `tick` / `sweep` | conv 路由、全会话推进、闲置回收 |
 | `@adapter.KcpUdpPeer` | 双端直连适配器 |
 | `@adapter.KcpUdpHub` | 单 socket 多会话组合宿主 |
+| `@fec.FecSession` | FEC 会话组合壳（透传 + 组恢复） |
+| `@fec.FecTx` / `FecRx` / `RsCodec` / `MdsCodec` | FEC 发/收机与可换编码端口 |
 
 ## 错误面
 
@@ -97,6 +129,7 @@ let peer = @adapter.KcpUdpPeer::connect_client(7, 128, hub.local_addr())
 - 仅消息模式；KCP 的 stream 追加模式不提供。
 - 协作式单运行时内使用，非线程安全；跨线程事件须经运行时进入。
 - 协议核心全后端可移植；适配器因原生 socket 限 native 后端。
+- FEC 层为核外可选层：不接入即不存在；KCP 差分对拍门与 FEC 门互不触及。
 - 吞吐扩展按实测判据重估，当前未排期。
 
 定位与演进的完整说明见 `spec.md`。

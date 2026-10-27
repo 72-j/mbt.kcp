@@ -49,7 +49,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | K5 | C 差分对拍(`workspace/` 驱动对 + diff_gate.mjs) | 帧转录逐字节等 + 收敛讫数 | **完成**(KCPDIFF:PASS,20%/33% 丢失全同) |
 | K6 | KcpServer conv 分离器 | 双 conv 不串线/自动建+护栏+收尸轮回/跨会话碎片合并 | **完成**(26/26 绿,2026-10-25) |
 | K7 | KcpUdpHub 组合宿主 | 真 UDP 双客户端不串线/回程/洪泛/清扫/重建 5/5 | **完成**(28/28+5/5 绿,2026-10-25) |
-| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **进行中**(刀1-4 讫 35/35 绿:GF 5+RS 9+帧层 14+会话接线带损门 3 强丢对照/LCG 广谱;刀5 读数归档候战,2026-10-27) |
+| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **完成**(五刀讫 35/35 绿,2026-10-27:GF 5+RS 9+帧层 14+会话带损门 3+FecSession 接线;读数留证=fec_bench 编码 100/恢复 45/层直通 9 MB/s,RS(10,3)/1200B 片) |
 
 ## 4. KCP 协议线格式(24B 头 + data)
 
@@ -75,7 +75,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 
 | 版本 | 日期 | 内容 |
 |---|---|---|
-| v0.13 | 2026-10-27 | FEC 层开役(K8,视频流低延时;RS(GF(2^8)) k+m 组恢复,D-FEC1~10 入 §2):线格式 12B 自描述头携 k/m(逐组参数——动态调 k 缝前置,大gen×moonbole KAN 评审 R1);刀1 GF 内核开工;自适应策略机(K9 候)判据入 todo |
+| v0.13 | 2026-10-27 | **FEC 层全役收官(K8 五刀,35/35 绿)**:RS(GF(2^8)) k+m 组恢复;线格式 12B 自描述头携 k/m(逐组参数——动态调组形缝前置,D-FEC1~12 入 §2,合同 = domain/fec_dialect.toml);六边形 MdsCodec 端口(RS 缺省适配器);FecSession 组合壳 API 透传;门 = LCG 财产门 + 带损集成门(FEC 开 ≤8 拍 vs 关等 RTO 14 拍,KCPDIFF 不动);读数 = fec_bench 留证;自适应策略机(K9 候)判据入 todo |
 | v0.12 | 2026-10-25 | 抽仓立户(thy1016/moonkcp 子模块 mbt.kcp,MulanPSL-2.0,发布 mooncakes 0.1.0,tag v0.1.0)+ examples 双示例(真 UDP 实跑)+ 性能役(基线重锚 release + 刀2a FixedArray[Byte]+unsafe_blit:343k→887k pps,对 C 比值 5.1×→2.0-2.3×,收兵) |
 | v0.11 | 2026-10-25 | 差分加压(乱序+真停摆,102 帧无屏蔽逐字节全同;逮到 set_wnd 漏 imax 钳制直译偏差)+ K6 KcpServer conv 分离器 + 收尾役三件套(stats 观测面/sweep 闲置回收/K7 KcpUdpHub 组合宿主)+ 域门 cwd 迁移 |
 | v0.10 | 2026-10-25 | bak/ 更名 .tests/(C 参照库藏)引用面回灌 |

@@ -17,10 +17,23 @@
 - **观测面 `Kcp::stats`**（RTT/RTO/拥塞窗/队列/超时重传计数/接收守恒账）。
 - **原生实时中继 `rt_relay`**（§6.5 帧协议：房表 / 扇出 / presence /
   闲置清扫）+ `rt_relay/cmd` 可执行壳。
+- **FEC 前向纠错层 `thy1016/moonkcp/fec`**（可选层，核外组合）：
+  - `RsCodec`：Reed-Solomon 系统码（GF(2^8)、多项式 0x11D、Cauchy 阵
+    MDS——组内 ≤m 抹除必可恢复）；
+  - `FecTx` / `FecRx`：组机器（组满同突发发冗余、数据帧即刻透传、
+    组齐当场恢复补投、尾组不闭组回落 ARQ）+ 双侧观测快照；
+  - 12B 自描述线头逐组携 k/m（发侧单边拍板、收侧零协商——动态调组形
+    的线格式前提一次做对），合同 = `domain/fec_dialect.toml`；
+  - `MdsCodec` 端口注入（RS 仅为缺省适配器）；`FecSession` 组合壳
+    API 一一透传，FEC 关闭 = 直接用 `KcpSession`；
+  - 门：LCG 财产门（k×m 组合任意 ≤m 抹除逐字节相等）+ 带损集成门
+    （FEC 开 ≤8 拍全交付 vs 关缺片等 RTO 14 拍）；
+  - 读数：`moon run workspace/fec_bench --release`。
 - `examples/`：echo 服务端与对打客户端（真 UDP 回环可跑）。
 
 性能：release 构建纯核吞吐约 77–89 万消息/秒/核（较 0.1.0 发布件提升
-约 2.3–2.6×；构建档位与批量拷贝两笔）。
+约 2.3–2.6×；构建档位与批量拷贝两笔）。FEC 层（RS(10,3)/1200B 片）：
+编码 ~100 MB/s、最坏恢复 ~45 MB/s、层直通 ~9 MB/s（留证不作门）。
 
 ## 0.1.0（2026-10-25）
 
