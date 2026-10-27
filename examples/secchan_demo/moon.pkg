@@ -7,3 +7,11 @@ import {
 }
 
 pkgtype(kind: "executable")
+
+// 可执行主包钉 native:adapter 为 native 门,js/wasm 计划整体摘除
+// (可执行件无库接口面,supported_targets 的 .mbti 陈旧代价不适用;
+// 文件级 targets 门会在缺省 wasm 计划下吃 [4067] 无 main)
+
+options(
+  supported_targets: "native",
+)

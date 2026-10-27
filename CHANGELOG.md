@@ -3,7 +3,7 @@
 本文件面向**使用者**，记录每版对外可见的变化（API / 行为 / 兼容性 / 工程）。
 判据与规范细节见 `spec.md`（本仓规范卷）。
 
-## 未发布（0.2.0 候选）
+## 0.2.0（2026-10-27）
 
 **破坏性：应用载荷面 API 类型变更** `Bytes` → `FixedArray[Byte]`（刀2a
 批量拷贝优化）：`Kcp::send` / `Kcp::recv` / `KcpSession::send_message` /
@@ -27,7 +27,9 @@
   - `MdsCodec` 端口注入（RS 仅为缺省适配器）；`FecSession` 组合壳
     API 一一透传，FEC 关闭 = 直接用 `KcpSession`；
   - 门：LCG 财产门（k×m 组合任意 ≤m 抹除逐字节相等）+ 带损集成门
-    （FEC 开 ≤8 拍全交付 vs 关缺片等 RTO 14 拍）；
+    （FEC 开 ≤8 拍全交付 vs 关缺片等 RTO 14 拍）+ quicktest 三面
+    （边界两域：线域 k+m≤255 / 编解码域 256；守恒律：逐组记账精确
+    等式 + 内容恰好一次；公平性：恢复窗逐出 FIFO）；
   - 读数：`moon run workspace/fec_bench --release`。
 - `examples/`：echo 服务端与对打客户端（真 UDP 回环可跑）。
 
