@@ -26,10 +26,10 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | # | 裁定 | 理由 |
 |---|---|---|
 | D-FEC1 | 层位 = `fec/` 子包,纯形零 IO 零时钟 | 全后端移植;KCP 核心零沾(D-KCP1/2 不破);独立可测 |
-| D-FEC2 | 线格式 = 12B 自描述头(group_id u32 / shard_index u8 / k u8 / m u8 / payload_len u16) | k/m 入头 = 逐组参数:发侧单边拍板、收侧零协商;动态调 k 的 wire 前提一次做对(线格式持久合同) |
+| D-FEC2 | 线格式 = 12B 自描述头(group_id u32 / shard_index u8 / k u8 / m u8 / shard_total u8 / payload_len u16 / reserved u16,七字段) | k/m 入头 = 逐组参数:发侧单边拍板、收侧零协商;动态调 k 的 wire 前提一次做对(线格式持久合同) |
 | D-FEC3 | 域参数 = 多项式 0x11D、生成元 2 | libfec 惯例;刀1 已知答案向量钉死后永不变 |
 | D-FEC4 | 尾组不满 k 不闭组 | 零垫片开销;>m 丢失回落 ARQ |
-| D-FEC5 | KCP mtu 让位 FEC 头(线包不超原 MTU) | 视频路径不赌路径 MTU |
+| D-FEC5 | 线包 = KCP mtu + FEC 头 + 体长前缀(缺省 1400+14=1414 ≤ 路径 MTU 1500);更紧预算的路径,宿主建壳前先 `set_mtu(预算−14)` | 视频路径不赌路径 MTU;KCP mtu 让位 FEC 头 |
 | D-FEC6 | 黄金门 = LCG 财产门(k×m 组合任意 ≤m 抹除逐字节相等)+ 带损集成门 | 确定性、无参照依赖、组合全覆盖;KCPDIFF 门原样不动(FEC 在核外) |
 | D-FEC7 | 役名 K8 五刀:GF 内核 → RS 编解码 → FEC 帧层 → 会话接线 → 读数归档 | 接 K 系序列 |
 | D-FEC8 | 缝 = 参数不是包:`open_group(k~, m~)` 逐组实参 + 宿主侧 `FecPolicy::decide(signals) -> Profile` 端口 | fec/ 纯包永不知「自适应」存在;最薄的缝 |
@@ -49,7 +49,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | K5 | C 差分对拍(`workspace/` 驱动对 + diff_gate.mjs) | 帧转录逐字节等 + 收敛讫数 | **完成**(KCPDIFF:PASS,20%/33% 丢失全同) |
 | K6 | KcpServer conv 分离器 | 双 conv 不串线/自动建+护栏+收尸轮回/跨会话碎片合并 | **完成**(26/26 绿,2026-10-25) |
 | K7 | KcpUdpHub 组合宿主 | 真 UDP 双客户端不串线/回程/洪泛/清扫/重建 5/5 | **完成**(28/28+5/5 绿,2026-10-25) |
-| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **完成**(五刀讫 35/35 绿,2026-10-27:GF 5+RS 9+帧层 14+会话带损门 3+FecSession 接线;读数留证=fec_bench 编码 100/恢复 45/层直通 9 MB/s,RS(10,3)/1200B 片) |
+| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **完成**(五刀讫,2026-10-27:fec 包 14/14(GF 5+RS 4+帧层 5)+根包 35/35(含带损门 3)+adapter 5/5,wasm-gc 同绿+deny-warn 净+KCPDIFF:PASS;读数留证=fec_bench 编码 100/恢复 45/层直通 9 MB/s,RS(10,3)/1200B 片) |
 
 ## 4. KCP 协议线格式(24B 头 + data)
 

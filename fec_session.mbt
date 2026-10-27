@@ -6,8 +6,9 @@
 //   - tick         → KCP 帧 逐帧 FecTx.feed(组满同突发出冗余)
 //   - on_datagram  → 线帧 FecRx.feed 出 KCP 报文 逐个喂会话
 //   - poll_message → 直通
-// 线预算(D-FEC5):KCP mtu 不动,片容量 = mtu + FEC 头 + 体长前缀,
-// 线包 ≤ 原 MTU;载荷超容量时 FecTx.feed abort(诚实急停,刀3 语义)。
+// 线预算(D-FEC5):片容量 = KCP mtu + FEC 头 + 体长前缀(缺省 1414
+// ≤ 路径 MTU 1500);更紧预算的路径,建壳前先 session.kcp.set_mtu(预算−14)
+// (容量构造时冻结)。载荷超容量时 FecTx.feed abort(诚实急停,刀3 语义)。
 // FEC 关闭 = 直接用 KcpSession——本壳不存在即直通,核零沾。
 
 ///|
