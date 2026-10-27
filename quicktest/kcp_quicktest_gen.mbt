@@ -9,6 +9,7 @@ priv enum SymCmd {
   Tick
   Deliver
   Drop
+  Reorder
 } derive(Debug)
 
 ///|
@@ -147,6 +148,23 @@ fn kcp_quick_deliver(h : Harness) -> Unit {
 }
 
 ///|
+/// 乱序注入:反转待发数据帧序(尾 sn 先进收窗),随后按交付面走
+/// (input 内联迁移,收窗按 sn 重排,交付序仍 = 发送序)。
+fn kcp_quick_scramble(h : Harness) -> Unit {
+  let reversed : Array[FixedArray[Byte]] = []
+  let mut i = h.wire_c2s.length() - 1
+  while i >= 0 {
+    reversed.push(h.wire_c2s[i])
+    i -= 1
+  }
+  h.wire_c2s.clear()
+  for frame in reversed {
+    h.wire_c2s.push(frame)
+  }
+  kcp_quick_deliver(h)
+}
+
+///|
 /// statem(harness 闭包捕获:qcs 契约里 transition_concrete 无 system 入参,
 /// 观测面只能捕获;harness 计数跨用例持续,序号戳单调不回绕)
 fn kcp_quick_statem(
@@ -178,6 +196,8 @@ fn kcp_quick_statem(
         Some(Tick)
       } else if roll < 90 {
         Some(Deliver)
+      } else if roll < 95 {
+        Some(Reorder)
       } else {
         Some(Drop)
       }
@@ -193,7 +213,7 @@ fn kcp_quick_statem(
             seq_sent: model.seq_sent + 1L,
           }
         Tick => model
-        Deliver => model
+        Deliver | Reorder => model
         Drop => model
       }
     },
@@ -206,7 +226,7 @@ fn kcp_quick_statem(
             seq_sent: harness.next_seq - 1L,
           }
         Tick => model
-        Deliver =>
+        Deliver | Reorder =>
           {
             ..model,
             bytes_delivered: harness.delivered_bytes,
@@ -268,6 +288,10 @@ fn kcp_quick_statem(
           kcp_quick_deliver(system)
           SymResp::Ok
         }
+        Reorder => {
+          kcp_quick_scramble(system)
+          SymResp::Ok
+        }
         Drop => {
           system.wire_c2s.clear()
           system.wire_s2c.clear()
@@ -283,6 +307,7 @@ fn kcp_quick_statem(
         Tick => "Tick"
         Deliver => "Deliver"
         Drop => "Drop"
+        Reorder => "Reorder"
       }
     },
     label=fn(_model, _cmd, _resp) { [] },
@@ -308,7 +333,7 @@ fn kcp_quick_run_config() -> @qcs.RunConfig {
 
 ///|
 /// K10 quicktest 属性测试(qcs assert_check;shrink 收敛报告白得)
-test "K10 KCP quicktest:随机 Send×Tick×Deliver×Drop 序列下守恒/有序(shrink 收敛)" {
+test "K10 KCP quicktest:随机 Send×Tick×Deliver×Drop×Reorder 序列下守恒/有序(shrink 收敛)" {
   let harness = kcp_quick_harness_new(7, 4096, 20)
   let sm = kcp_quick_statem(harness)
   let _ = @qcs.assert_check(sm, config=kcp_quick_run_config())
