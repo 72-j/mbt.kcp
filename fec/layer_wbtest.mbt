@@ -151,3 +151,54 @@ test "端口注入:with_codec 走 MdsCodec 适配器同收敛,数据齐组不计
   assert_eq(st.recovered_groups, 0) // 数据齐组,无恢复
   assert_eq(st.delivered, 2)
 }
+
+///|
+test "镜像核负例:数据帧头 payload_len 与体内 body_len 漂移即弃" {
+  let rx = FecRx::new(4)
+  let frame = FixedArray::make(40, (0).to_byte())
+  frame[13] = (8).to_byte() // 体内 body_len = 8
+  fec_write_header(frame, 1, 0, 3, 2, 9) // 头说 payload_len = 9
+  let _ = rx.feed(frame)
+  let st = rx.stats()
+  assert_eq(st.dropped_malformed, 1)
+  assert_eq(st.delivered, 0)
+}
+
+///|
+test "跨组交错到达:逐组攒窗互不串线" {
+  let tx = FecTx::new(3, 1, 40)
+  let rx = FecRx::new(8)
+  let mk = fn(i : Int32) {
+    let b = FixedArray::make(6, (0).to_byte())
+    b[0] = i.to_byte()
+    b
+  }
+  let wire : Array[FixedArray[Byte]] = []
+  for i in 1..<7 {
+    for f in tx.feed(mk(i)) {
+      wire.push(f)
+    }
+  }
+  // wire 8 帧:g0 = [0..4) 载荷 1-3,g1 = [4..8) 载荷 4-6
+  assert_eq(wire.length(), 8)
+  // 交错序:g0d0, g1d0, g1d1, g0d1, g1d2, g0d2, g0p0, g1p0
+  let order : Array[Int32] = [0, 4, 5, 1, 6, 2, 3, 7]
+  let got : Array[Int32] = []
+  for idx in order {
+    for msg in rx.feed(wire[idx]) {
+      got.push(msg[0].to_int())
+    }
+  }
+  // 数据片即刻投,组内各自成序;两组内容互不串线(g1 先闭先投 6)
+  assert_eq(got.length(), 6)
+  assert_eq(got[0], 1)
+  assert_eq(got[1], 4)
+  assert_eq(got[2], 5)
+  assert_eq(got[3], 2)
+  assert_eq(got[4], 6)
+  assert_eq(got[5], 3)
+  let st = rx.stats()
+  assert_eq(st.delivered, 6)
+  assert_eq(st.recovered_groups, 0) // 两组数据片全达,零恢复
+  assert_eq(st.dropped_late, 2) // 两冗余帧迟到弃置
+}
