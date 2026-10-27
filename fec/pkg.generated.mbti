@@ -15,6 +15,14 @@ pub fn gf_mul_shift_add(Int32, Int32) -> Int32
 // Errors
 
 // Types and methods
+pub struct RsCodec {
+  k : Int32
+  m : Int32
+  matrix : FixedArray[Int32]
+}
+pub fn RsCodec::encode_parity(Self, Array[FixedArray[Byte]]) -> Array[FixedArray[Byte]]
+pub fn RsCodec::new(Int32, Int32) -> Self
+pub fn RsCodec::recover(Self, Array[FixedArray[Byte]?]) -> Array[FixedArray[Byte]]?
 
 // Type aliases
 
