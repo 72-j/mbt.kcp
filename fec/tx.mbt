@@ -26,12 +26,19 @@ pub fn FecTx::new(k : Int32, m : Int32, capacity : Int32) -> FecTx {
 
 ///|
 /// 端口注入版(换码 = 换适配器,层机器零改动)。
+/// 判据:k ≥ 1,m ≥ 1,k+m ≤ 255(shard_total 单字节线域;越域即断言死,
+/// k+m=256 的组形线头写不出,发出来只会全数被对端弃置——谎报不如急停)。
 pub fn FecTx::with_codec(
   codec : &MdsCodec,
   k : Int32,
   m : Int32,
   capacity : Int32,
 ) -> FecTx {
+  if k < 1 || m < 1 || k + m > 255 {
+    abort(
+      "FecTx::with_codec: 组形越线域 k=\{k} m=\{m}(判据:k≥1, m≥1, k+m≤255)",
+    )
+  }
   {
     k,
     m,

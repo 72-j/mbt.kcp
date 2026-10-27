@@ -23,6 +23,11 @@ pub struct RsCodec {
 
 ///|
 pub fn RsCodec::new(k : Int32, m : Int32) -> RsCodec {
+  if k < 1 || m < 1 || k + m > 256 {
+    abort(
+      "RsCodec::new: 组形越域 k=\{k} m=\{m}(判据:k≥1, m≥1, k+m≤256)",
+    )
+  }
   let matrix : FixedArray[Int32] = FixedArray::make((k + m) * k, 0)
   // 上 k 行单位阵
   for i in 0..<k {

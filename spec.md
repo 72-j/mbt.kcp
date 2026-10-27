@@ -49,7 +49,7 @@ MoonBit KCP 协议纯实现——零依赖、零 IO、纯状态机。以 UDP 为
 | K5 | C 差分对拍(`workspace/` 驱动对 + diff_gate.mjs) | 帧转录逐字节等 + 收敛讫数 | **完成**(KCPDIFF:PASS,20%/33% 丢失全同) |
 | K6 | KcpServer conv 分离器 | 双 conv 不串线/自动建+护栏+收尸轮回/跨会话碎片合并 | **完成**(26/26 绿,2026-10-25) |
 | K7 | KcpUdpHub 组合宿主 | 真 UDP 双客户端不串线/回程/洪泛/清扫/重建 5/5 | **完成**(28/28+5/5 绿,2026-10-25) |
-| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **完成**(五刀讫,2026-10-27:fec 包 14/14(GF 5+RS 4+帧层 5)+根包 35/35(含带损门 3)+adapter 5/5,wasm-gc 同绿+deny-warn 净+KCPDIFF:PASS;读数留证=fec_bench 编码 100/恢复 45/层直通 9 MB/s,RS(10,3)/1200B 片) |
+| K8 | FEC 层(RS(k+m),`fec/` 子包,五刀) | 财产门(LCG k×m 组合抹除)+ 带损集成门(FEC 开无 RTO 等待) | **完成**(五刀+quicktest 三面讫,2026-10-27:fec 包 19/19(GF 5+RS 4+帧层 7+quicktest 3)+根包 35/35(含带损门 3)+adapter 5/5,wasm-gc 同绿+deny-warn 净+KCPDIFF:PASS;quicktest 三面=边界(线域 k+m≤255/编解码域 256 两级)/守恒律(LCG 多种子逐组记账精确等式+内容恰好一次)/公平性(窗口逐出 FIFO,片位公平由 MDS 穷举门定理级盖);边界面拨真:读侧域门 256→255(shard_total 单字节,验收等价)+FecTx 构造守卫;读数留证=fec_bench 编码 100/恢复 45/层直通 9 MB/s,RS(10,3)/1200B 片) |
 
 ## 4. KCP 协议线格式(24B 头 + data)
 

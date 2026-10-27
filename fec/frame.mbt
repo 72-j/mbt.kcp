@@ -66,7 +66,10 @@ fn fec_read_header(frame : FixedArray[Byte]) -> FecHeader? {
   let m = frame[6].to_int()
   let shard_total = frame[7].to_int()
   let payload_len = (frame[8].to_int() << 8) | frame[9].to_int()
-  if k < 1 || m < 1 || k + m > 256 || shard_total != k + m {
+  // 线域:shard_total 单字节 ⇒ k+m ≤ 255(k+m=256 写不出——字节回卷
+  // 为 0,恒被 shard_total 核拒;此门拨 255 与之同判,免死宽)。
+  // 编解码域(GF 上限 256)由 RsCodec::new 守卫另执,两级不同面。
+  if k < 1 || m < 1 || k + m > 255 || shard_total != k + m {
     return None
   }
   let shard_index = frame[4].to_int()
