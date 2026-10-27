@@ -598,3 +598,80 @@ test "fragment count limit at WND_RCV: 127 ok, 128 rejected" {
   assert_eq(kcp2.send(over), -2)
   assert_eq(kcp2.waitsnd(), 0)
 }
+
+///|
+/// K10 公平面:窗口受限下 flush 服务序 = snd_queue FIFO(先到先发,
+/// 不越位不饿死)。实测动力学(探针钉死):mk_fast = nodelay(1,10,2,1)
+/// 第 4 参 nc=1 = nocwnd 模式(拥塞窗关闭),节流轴 = snd_wnd;
+/// 首拍 update(0) 即生效,恰 min(snd_wnd, n) 片进窗(段级:进窗者
+/// 必是队头 sn 0..k-1),其余原序留守;ACK 回流泵后全员按序交付。
+/// 参数域扫 snd_wnd ∈ {1,2,4} × n ∈ {3,5}。
+test "fairness: window-throttled flush serves snd_queue FIFO, no starvation" {
+  for sndwnd in [1, 2, 4] {
+    for n in [3, 5] {
+      let a = mk_fast(7)
+      a.set_wnd(sndwnd, 0)
+      let b = mk_fast(7)
+      for tag in 1..<(n + 1) {
+        assert_eq(a.send(mk_payload(tag, 24)), 24)
+      }
+      assert_eq(a.snd_queue.length(), n)
+      // 首拍:恰 min(snd_wnd, n) 片进窗,且必是队头段(sn 0..k-1 原序)
+      let _ = a.update(0)
+      let served = if sndwnd < n { sndwnd } else { n }
+      assert_eq(a.snd_buf.length(), served)
+      for i in 0..<served {
+        assert_eq(a.snd_buf[i].sn, i)
+      }
+      assert_eq(a.snd_queue.length(), n - served)
+      // 收敛:无损泵后全员交付,tag 序 == 发送序(不饿死)
+      pump_clean(a, b, 10, 60)
+      for tag in 1..<(n + 1) {
+        assert_msg(b.recv(), mk_payload(tag, 24))
+      }
+      assert_true(b.recv() is None)
+      assert_eq(a.snd_queue.length(), 0)
+    }
+  }
+}
+
+///|
+/// K10 公平面:乱序注入不停摆不丢前缀。实测:nc=1 窗口 min(32,128)
+/// ≥ n ⇒ 首拍全量进窗;mss 级载荷(1376B)一帧一片,单拍即收齐 n 帧
+/// (小载荷会聚合帧,数帧不靠谱——段级才铁)。帧序整批反转(尾 sn
+/// 先进收窗),input 内联迁移 ⇒ 交付序仍严格 = 发送序;多片消息碎
+/// 片反转,聚齐才交,一条不丢。
+test "fairness: out-of-order injection reassembles in order, no prefix drop" {
+  let a = mk_fast(7)
+  let b = mk_fast(7)
+  let n = 4
+  let mss = 1376
+  for tag in 1..<(n + 1) {
+    assert_eq(a.send(mk_payload(tag, mss)), mss)
+  }
+  // 首拍全量进窗,一帧一片恰 n 帧
+  let frames = a.update(0)
+  assert_eq(frames.length(), n)
+  // 整批反转注入(尾 sn 先进),input 即迁移,无停摆
+  for i in 0..<n {
+    let _ = b.input(frames[n - 1 - i])
+  }
+  // 精确等式:交付序 == 发送序,一分不丢一粒不乱
+  for tag in 1..<(n + 1) {
+    assert_msg(b.recv(), mk_payload(tag, mss))
+  }
+  assert_true(b.recv() is None)
+  // 多片组装:一消息三片(3*mss-7 → ceil/1376 = 3 片)反转注入,聚齐才交
+  let payload = mk_payload(9, 3 * mss - 7)
+  assert_eq(a.send(payload), payload.length())
+  let frag_frames = a.update(10)
+  assert_eq(frag_frames.length(), 3)
+  for i in 0..<3 {
+    let _ = b.input(frag_frames[2 - i])
+  }
+  match b.recv() {
+    Some(msg) => assert_fa_eq(msg, payload)
+    None => fail("多片消息未组装交付")
+  }
+  assert_true(b.recv() is None)
+}
