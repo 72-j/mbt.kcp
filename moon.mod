@@ -16,4 +16,6 @@ import {
   "moonbitlang/async@0.22.4",
   "cc06b/mooncry@0.95.0",
   "moonbit-community/quickcheck_statemachine@0.0.1",
+  // quickcheck 统一最新（0.14.0 注册表 tarball 是旧格式 moon.mod.json，新工具链拒装）
+  "moonbitlang/quickcheck@0.15.1",
 }
