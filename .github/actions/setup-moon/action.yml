@@ -1,0 +1,55 @@
+name: Setup MoonBit
+description: >-
+  按 OS 装 MoonBit 工具链与原生依赖、加 PATH、核身版本、刷新依赖索引。
+  static / test 两个作业共用（形承 mbt.jsonld 同名 action；
+  known_good 为本仓最近一次全门实测所用工具链，偏差只警告不阻塞）。
+
+runs:
+  using: composite
+  steps:
+    - name: Install toolchain (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+        curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+        echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+    - name: Install toolchain (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+        brew install gcc
+        curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+        echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+    - name: Install toolchain (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        powershell -ExecutionPolicy Bypass -Command "irm https://cli.moonbitlang.com/install/powershell.ps1 | iex"
+        "$env:USERPROFILE\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+    - name: MinGW (Windows)
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: false
+        install: mingw-w64-ucrt-x86_64-gcc
+
+    - name: 核身 + 依赖索引
+      shell: bash
+      run: |
+        moon --version
+        moon version --all
+        # 本仓已知良好工具链（2026-11-01 所录：20261028 于同体量仓 CI 全门绿，
+        # 本地 gate.sh 全套件绿同版）；偏差只警告，不阻塞。
+        known_good="0.1.20261028"
+        installed="$(moon --version | head -n 1 | awk '{print $2}')"
+        if [ "$installed" != "$known_good" ]; then
+          echo "::warning::MoonBit $installed ≠ 已知良好 $known_good——先本地复跑 check/test 再按需更新本 action"
+        fi
+        moon update

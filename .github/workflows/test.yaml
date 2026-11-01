@@ -1,0 +1,75 @@
+# 独立仓 CI（体例承 mbt.jsonld 同名 workflow）：
+#   · static（仅 Linux，只跑一次）：check --deny-warn + .mbti 漂移门。
+#   · test（3 OS 矩阵）：test --deny-warn 的 wasm + native 双档；
+#     ubuntu 腿加 node 双真门（KCPWATCH 看门狗 + KCPDIFF K5 差分对拍，
+#     真 UDP 回环——真门锚定，非普通单测）。
+#   · 工具链安装集中到 .github/actions/setup-moon；门纪律：每门一步、
+#     不串命令、禁 continue-on-error / || true。
+name: Test
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Static gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Moon
+        uses: ./.github/actions/setup-moon
+
+      - name: 静态门 · check --deny-warn
+        run: moon check --deny-warn
+
+      - name: 门·.mbti 漂移
+        run: |
+          moon info
+          drift="$(git status --porcelain -- '*.mbti')"
+          if [ -n "$drift" ]; then
+            echo "::error::.mbti 与源码漂移——本地跑 moon info，把 .mbti 与产生它的改动同笔提交："
+            echo "$drift"
+            exit 1
+          fi
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Moon
+        uses: ./.github/actions/setup-moon
+
+      - name: 测试 · --deny-warn（wasm + native 双档）
+        run: |
+          echo "=== Wasm target ==="
+          moon test --deny-warn --target wasm
+          echo "=== Native target ==="
+          moon test --deny-warn --target native
+
+      - name: 真门 · node 双锚（仅 ubuntu；KCPWATCH + KCPDIFF）
+        if: runner.os == 'Linux'
+        run: |
+          node workspace/async_watchdog.mjs
+          node workspace/diff_gate.mjs
